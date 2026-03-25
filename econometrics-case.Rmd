@@ -7,16 +7,90 @@ output: pdf_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+show_interpretation <- TRUE
 ```
 
-## R Markdown
+# STEP 1 - Baseline Empirical Specification and Hypotheses
+```{r echo=FALSE, results='asis'}
+if (show_interpretation) {
+  cat("We aim to estimate the total causal effect of RoL on income.
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+Latitude, continent dummies, and colonial origin are included as controls since they likely influence both institutions and income on their own, leaving them out would induce bias in our estimate of the RoL effect.
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+We decide to exclude Human Capital, as we believe it is a mediator. When you control for a mediator, you block the indirect causal channel and only estimate the direct effect. By excluding it we can estimate the total effect (direct + indirect) of RoL on income.
 
-```{r cars}
-summary(cars)
+Our baseline model is as follows:")
+}
+```
+
+$$\text{logY}_i = \beta_0 + \beta_1 \text{RoL}_i + \beta_2 \text{LAT}_i + \beta_3 D_{1i} + \beta_4 D_{2i} + \beta_5 D_{3i} + \beta_6 \text{FoB}_i + \beta_7 \text{FoF}_i + \mu_i$$
+
+\textcolor{red}{Are we allowed to include our baseline model in our R output?}
+
+```{r echo=FALSE, results='asis'}
+  cat("Our assumptions are:\n
+      - We know and have included all the confounders (no omitted variables)\n
+      - No reverse causality\n
+      - Human capital is a mediator and is not included\n
+      ")
+```
+
+## Hypotheses
+
+\begin{table}[h]
+\centering
+\renewcommand{\arraystretch}{1.5} % Adds vertical padding for readability
+\begin{tabular}{|p{2.5cm}|c|p{4cm}|l|p{3.5cm}|}
+\hline
+\textbf{Variable} & \textbf{Direction} & \textbf{Rationale} & \textbf{One/two-sided} & \textbf{$H_0, H_1$} \\ \hline
+RoL & + & Better institutions lead to more income & One-sided & $H_0: \beta_1 \le 0$ \newline $H_1: \beta_1 > 0$ \\ \hline
+LAT (latitude) & ? & Differences in geographical conditions & Two-sided & $H_0: \beta_2 = 0$ \newline $H_1: \beta_2 \neq 0$ \\ \hline
+D1/D2/D3 (continent) & ? & Differences in regional conditions & Two-sided & $H_0: \beta_3, \beta_4, \beta_5 = 0$ \newline $H_1: \text{At least one} \neq 0$ \\ \hline
+FoF, FoB (colonizer) & ? & Differences in former colonizer & Two-sided & $H_0: \beta_6, \beta_7 = 0$ \newline $H_1: \text{At least one} \neq 0$ \\ \hline
+\end{tabular}
+\end{table}
+
+# STEP 2 - Load and Explore the Data
+```{r}
+# Load the data
+data <- read.csv("Data.csv", sep = ';', row.names = 'X')
+```
+
+## STEP 2.1 - Overview of all the data
+```{r echo=FALSE}
+#Load the necessary libraries
+library("psych")
+library("dplyr")
+library(corrplot)
+
+#Overview of all the data
+head(data)
+summary(data)
+describe(data)
+
+ #Compute covariance and correlation matrix (excluding region dummies)
+data_corr <- data %>%
+  select(logY, RoL, LAT, FoF, FoB)
+
+cov_matrix <- cov(data_corr, use = "complete.obs")
+cor_matrix <- cor(data_corr, use = "complete.obs")
+cov(data_corr, use = "complete.obs")
+cor(data_corr, use = "complete.obs")
+#Visualize the correlation matrix (excluding region dummies)
+corrplot(cor_matrix, method = "color")
+```
+
+## STEP 2.2 - Overview for each region
+
+```{r echo=FALSE}
+
+attach(data)
+index_africa <- D1 == TRUE
+index_asia <- D2 == TRUE
+index_america <- D3 == TRUE
+data_africa <- data[index_africa, ]
+data_asia <- data[index_asia, ]
+data_america <- data[index_america, ]
 ```
 
 ## Including Plots
