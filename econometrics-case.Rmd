@@ -62,6 +62,7 @@ data <- read.csv("Data.csv", sep = ';', row.names = 'X')
 library("psych")
 library("dplyr")
 library(corrplot)
+library(ggplot2)
 ```
 ```{r echo=TRUE}
 #Overview of all the data
@@ -182,10 +183,115 @@ cor(data_corr_am, use = "complete.obs")
 corrplot(cor_matrix, method = "color")
 ```
 
+## STEP 2.3 - Scatterplot of logY and RoL
+
+```{r echo=FALSE}
+ggplot(data = data, aes(x = RoL, y = logY)) +
+  geom_point(color = "purple")
+```
+\newpage
+
 # STEP 3 - Estimate and Analyze the Baseline Specification
 
 ## 3.1. Estimate the Baseline Specification with OLS
 
-```{r echo=TRUE}
-
+```{r echo=TRUE, warning=FALSE, message=FALSE}
+# Fit the model
+library(stargazer)
+baseline <- lm(logY ~ RoL + LAT + D1 + D2 + D3 + FoF + FoB, data = data)
+stargazer(data = baseline, type = "text", title = "OLS baseline")
 ```
+
+## 3.2. Interpret the estimated coefficients
+
+To test the significance of the coefficient of RoL we perform a one sided test. Our t-statistic is as follows:
+
+$$t = \frac{0.821-0}{0.158} = 5.196$$
+$$Critical\ value = t_{0.001; 54} = 3.232$$
+$$5.196 > 3.232 \to We \ reject \ on \ the \ 0.1\% \ significance \ level$$
+
+RoL: coefficient is significant on the 1% significance level. A one unit increase of RoL leads to a 82.1% increase in GDP per capita, ceteris paribus.
+
+The controls are not significant on the 5% significance level. Since they are all two-sided tests, the t-statistics and p-values are calculated by the lm function.
+
+Our regressors explain the variation in log GDP per capita for 65.5%. The included regressors are jointly significant on the 1% significance level. 
+
+## 3.3 F-tests
+
+```{r warning=FALSE, message=FALSE}
+library(car)
+f_test_region <- linearHypothesis(baseline, 
+                                  c("D1 = 0", "D2 = 0", "D3 = 0"))
+f_test_region
+```
+
+The continent dummies are jointly significant on the 1% significance level. At least one of the continent dummies has explanatory power.
+
+
+```{r warning=FALSE, message=FALSE}
+f_test_colonizer <- linearHypothesis(baseline, 
+                                  c("FoF = 0", "FoB = 0"))
+f_test_colonizer
+```
+
+The former colonizer dummies are not jointly significant on the 5% significance level. None of the former colonizer dummies have explanatory power.
+
+```{r warning=FALSE, message=FALSE}
+f_test_joint <- linearHypothesis(baseline, 
+                                  c("LAT = 0", "D1 = 0", "D2 = 0", "D3 = 0", "FoF = 0", "FoB = 0"))
+f_test_joint
+```
+
+The control variables are jointly significant. At least one of the control variables has explanatory power.
+
+# STEP 4 - Evaluating Gauss-Markov Assumptions and Applying Remedial Measures
+
+## 4.1. Nature of the regressors
+
+Our dummy variables: D1, D2, D3, FoF and FoB are considered deterministic due to the fact that their values are limited to either 0 and 1 over repeated samples.\newline
+LAT is a fixed coordinate, nothing can change that. This means LAT is deterministic.\newline
+RoL is stochastic and endogenous. It almost certainly correlates with the error term. This is because log GDP per capita affects RoL (see dashed line in causal diagram).\newline
+This implies that OLS becomes biased and inconsistent which means that the coefficient does not measure the true causal effect.
+Remediation is required. This will be covered in step 4(g).
+
+## 4.2. Distribution of Error Terms
+
+### 4.2.1. Histogram of Residuals
+
+```{r warning=FALSE}
+library(ggplot2)
+library(car)
+
+# Extract residuals
+residuals_baseline <- residuals(baseline)
+
+# Histogram
+ggplot(data.frame(residuals_baseline), aes(x = residuals_baseline)) +
+  geom_histogram(aes(y = ..density..), bins = 30, fill = "pink", color = "#FF2F92") +
+  geom_density(color = "purple") +
+  ggtitle("Histogram of Residuals")
+```
+
+### 4.2.2. Jarque-Bera Test for Normality
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+library(tseries)
+jarque.bera.test(residuals_baseline)
+```
+
+We cannot reject the H0 hypothesis on the 5% significance level. This means that we can not say that the error terms are not normality distributed on the 5% significance level.\newline
+Side note: We have a small sample size. In small samples, the test may have low power, meaning it may fail to detect deviations from normality.\newline\newline
+Normality does not have an effect on OLS point estimation. If the error term is not normally distributed, our t- and F-tests are unreliable because they assume normality of the error term. However, since we cannot say that the error term is not normally distributed, our t- and F-test should remain reliable.\newline
+Remediation is not necessary in this step.
+
+## 4.3. Multicollinearity
+
+We compute the variance inflation factor:
+
+```{r echo=FALSE}
+library(car)
+vif(baseline)
+```
+We see that we get high values for D1 and D3. We think this is because there are barely any countries that belong to the fourth category (D1 = 0, D2 = 0, D3 = 0). If we give each category a dummy variable, we get perfect multicollinearity. This situation doesn't differ much from the situation of perfect multicollinearity. This is why we think D1 and D3 have such high VIF's.\newline
+Multicollinnearity is not a theoretical issue. It does not affect unbiasedness or consistency and remains the most efficient estimator. However, a high degree of multicollinearity can lead to larger variances of the estimators and thus wider confidence intervals and lower t-statistics. This decreases the power of inferential tests. Multicollinearity only leads to practical problems.\newline
+Action should not be taken because multicollinearity mostly reflects a lack of information in the data.
