@@ -57,28 +57,33 @@ data <- read.csv("Data.csv", sep = ';', row.names = 'X')
 ```
 
 ## STEP 2.1 - Overview of all the data
-```{r echo=FALSE}
+```{r echo=FALSE, message=FALSE, warning=FALSE}
 #Load the necessary libraries
 library("psych")
 library("dplyr")
 library(corrplot)
-
+```
+```{r echo=TRUE}
 #Overview of all the data
 head(data)
 summary(data)
 describe(data)
-
+```
+```{r echo=FALSE}
  #Compute covariance and correlation matrix (excluding region dummies)
 data_corr <- data %>%
   select(logY, RoL, LAT, FoF, FoB)
 
 cov_matrix <- cov(data_corr, use = "complete.obs")
 cor_matrix <- cor(data_corr, use = "complete.obs")
+```
+```{r echo=TRUE}
 cov(data_corr, use = "complete.obs")
 cor(data_corr, use = "complete.obs")
 #Visualize the correlation matrix (excluding region dummies)
 corrplot(cor_matrix, method = "color")
 ```
+
 
 ## STEP 2.2 - Overview for each region
 
@@ -93,12 +98,94 @@ data_asia <- data[index_asia, ]
 data_america <- data[index_america, ]
 ```
 
-## Including Plots
+### 1. Africa
 
-You can also embed plots, for example:
+#### 1.1 Overview
 
-```{r pressure, echo=FALSE}
-plot(pressure)
+```{r echo=TRUE}
+#Overview of all the data
+head(data_africa)
+summary(data_africa)
+describe(data_africa)
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+#### 1.2 Covariance and correlation matrix
+
+```{r echo=FALSE}
+#Compute covariance and correlation matrix (excluding region dummies)
+data_corr_af <- data_africa %>%
+  select(logY, RoL, LAT, FoF, FoB)
+
+cov_matrix <- cov(data_corr_af, use = "complete.obs")
+cor_matrix <- cor(data_corr_af, use = "complete.obs")
+```
+```{r echo=TRUE}
+cov(data_corr_af, use = "complete.obs")
+cor(data_corr_af, use = "complete.obs")
+#Visualize the correlation matrix (excluding region dummies)
+corrplot(cor_matrix, method = "color")
+```
+
+### 2. Asia
+
+#### 2.1 Overview
+
+```{r echo=TRUE}
+#Overview of all the data
+head(data_asia)
+summary(data_asia)
+describe(data_asia)
+```
+
+#### 2.2 Covariance and correlation matrix
+
+```{r echo=FALSE}
+#Compute covariance and correlation matrix (excluding region dummies)
+data_corr_as <- data_asia %>%
+  select(logY, RoL, LAT, FoF, FoB)
+
+cov_matrix <- cov(data_corr_as, use = "complete.obs")
+cor_matrix <- cor(data_corr_as, use = "complete.obs")
+```
+```{r echo=TRUE}
+cov(data_corr_as, use = "complete.obs")
+cor(data_corr_as, use = "complete.obs")
+#Visualize the correlation matrix (excluding region dummies)
+corrplot(cor_matrix, method = "color")
+```
+
+### 3. America
+
+#### 3.1 Overview
+
+```{r echo=TRUE}
+#Overview of all the data
+head(data_america)
+summary(data_america)
+describe(data_america)
+```
+
+#### 3.2 Covariance and correlation matrix
+
+```{r echo=FALSE}
+#Compute covariance and correlation matrix (excluding region dummies)
+data_corr_am <- data_america %>%
+  select(logY, RoL, LAT, FoF, FoB)
+
+cov_matrix <- cov(data_corr_am, use = "complete.obs")
+cor_matrix <- cor(data_corr_am, use = "complete.obs")
+```
+```{r echo=TRUE}
+cov(data_corr_am, use = "complete.obs")
+cor(data_corr_am, use = "complete.obs")
+#Visualize the correlation matrix (excluding region dummies)
+corrplot(cor_matrix, method = "color")
+```
+
+# STEP 3 - Estimate and Analyze the Baseline Specification
+
+## 3.1. Estimate the Baseline Specification with OLS
+
+```{r echo=TRUE}
+
+```
