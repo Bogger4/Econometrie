@@ -1,6 +1,6 @@
 ---
 title: "Econometrics case"
-author: "Group 18"
+author: "Group 9 & Group 18"
 date: "`r Sys.Date()`"
 output: pdf_document
 ---
@@ -210,9 +210,9 @@ $$t = \frac{0.821-0}{0.158} = 5.196$$
 $$Critical\ value = t_{0.001; 54} = 3.232$$
 $$5.196 > 3.232 \to We \ reject \ on \ the \ 0.1\% \ significance \ level$$
 
-RoL: coefficient is significant on the 1% significance level. A one unit increase of RoL leads to a 82.1% increase in GDP per capita, ceteris paribus.
+RoL: coefficient is significant on the 1% significance level. A one unit increase of RoL leads to a 82.1% increase in GDP per capita, ceteris paribus. This is consistent with the institutional hypothesis.\newline
 
-The controls are not significant on the 5% significance level. Since they are all two-sided tests, the t-statistics and p-values are calculated by the lm function.
+The controls are not significant on the 5% significance level. Since they are all two-sided tests, the t-statistics and p-values are calculated by the lm-function.\newline
 
 Our regressors explain the variation in log GDP per capita for 65.5%. The included regressors are jointly significant on the 1% significance level. 
 
