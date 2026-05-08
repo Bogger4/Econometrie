@@ -772,11 +772,11 @@ library(stargazer)
 stargazer(baseline_HC, type = "text", title = "OLS Baseline with Human capital", 
           align = TRUE)
 ```
-```{r echo=FALSE}
+```{r echo=FALSE, message=FALSE, warning=FALSE}
 resettest(baseline_HC, power = 2:3, type = "fitted")
 ```
 
-```{r echo=FALSE}
+```{r echo=FALSE, message=FALSE, warning=FALSE}
 # 1. Extract the summary coefficients table
 stats <- summary(baseline)$coefficients
 
@@ -816,24 +816,24 @@ The Baseline Model without Human Capital stands as the most appropriate specific
 Economically, institutions are recognized as "deep determinants" of growth that precede and incentivize investments in education and physical capital. The Baseline Model captures the total effect of institutions, which includes both their direct influence on productivity and their indirect influence through the development of a skilled workforce. By contrast, the model with Human Capital only measures the narrow direct effect, which underrepresents the actual role of the Rule of Law in economic development. Additionally, Human Capital is often endogenous—where higher income levels lead to better education—which can introduce simultaneity bias. Therefore, the Baseline Model remains the most robust and theoretically sound representation of how institutional quality drives economic performance.
 
 ## 4.7. Endogeneity and Instrumental Variables
-### Baseline model (without HC )
+### Baseline model (without HC)
 RoL is stochastic and endogenous. D1, D2, D3, FoF, FoB and LAT are all stochastic and exogenous. If one or more regressor is endogenous OLS is biased, inconsistent and not efficient. 
 
-### 2SLS estimation
-```{r}
-data <- data %>%
-mutate(QOB_factor = factor(QOB))
+As instrumental variables we choose the Colonial Initial Conditions (log SM, log PD). These instrumental variables are valid when they are exogenous, relevant and excluded variables. Based on the diagram we can conclude that there is no potential feedback to Colonial Initial Conditions, making them exogenous. The Colonial Initial Conditions are relevant since they are correlated with RoL. The exclusion restriction is fulfilled since they are not included in our baseline model. 
 
+
+### 2SLS estimation
+```{r echo=FALSE, message=FALSE, warning=FALSE}
 # First stage estimation
-first_stage=lm(EDUC ~ QOB_factor + AGE + RACE + MARRIED + URBAN + REGION_factor, data = data)
+first_stage=lm(RoL ~ logSM + logPD + LAT + D1 + D2 + D3 + FoF + FoB , data = data)
 summary(first_stage)
 
 library(car)
-linearHypothesis(first_stage, matchCoefs(first_stage, "QOB_factor"))
+linearHypothesis(first_stage, matchCoefs(first_stage, c("logSM", "logPD")))
 
 # Second stage estimation
 library(AER)
-twosls=ivreg(WAGE ~ EDUC + AGE + RACE + MARRIED + URBAN + REGION_factor | QOB_factor + AGE + RACE + MARRIED + URBAN + REGION_factor, data = data)
+twosls=ivreg(logY ~ RoL + LAT + D1 + D2 + D3 + FoF + FoB | logSM + logPD + LAT + D1 + D2 + D3 + FoF + FoB, data = data)
 summary (twosls, diagnostics=TRUE)
 
 stargazer(baseline, twosls,
@@ -845,17 +845,16 @@ stargazer(baseline, twosls,
           no.space = TRUE)
 ```
 
-
+Based on the diagnostic test we observe an F statistic of 9.595 for weak instrument which is below the Rule of Thumb of 10 indicating waek instruments.
 
 
 ### Testing for Endogeneity
 ```{r}
 res_first=first_stage$residuals
 
-haus=lm(WAGE ~ EDUC + AGE + RACE + MARRIED + URBAN + REGION_factor + res_first, data=data)
+haus=lm(logY ~ RoL + LAT + D1 + D2 + D3 + FoF + FoB + res_first, data=data)
 summary (haus)
 ```
 
-
-
+The endogenous components of RoL has genuine explanatory power once added to the equation. However the residual is endogenous such that OLS is inconsistent and 2SLS is preferred.
 
