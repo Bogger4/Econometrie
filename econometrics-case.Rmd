@@ -467,73 +467,80 @@ The stargazer shows us that none of the coefficients are significant in the auxi
 #### Brown-Forsythe Test by REGION
 ```{r echo=FALSE, warning=FALSE, message=FALSE}
 # Group medians of residuals
+data <- data %>%
+mutate(Regions_factor = factor(Regions))
 attach(data)
-med_resid_region <- tapply(residuals_baseline, Regions, median, na.rm = TRUE)
+
+med_resid_region <- tapply(residuals_baseline, Regions_factor, median, na.rm = TRUE)
 
 # Absolute deviations from group medians
-z_region <- abs(residuals_baseline - med_resid_region[as.character(Regions)])
+z_region <- abs(residuals_baseline - med_resid_region[as.character(Regions_factor)])
 
 # One-way ANOVA on deviations
-BF_region <- lm(z_region ~ Regions)
+BF_region <- lm(z_region ~ Regions_factor)
 
 # Test H0 of equal variances across continents
-anova_tab9 <- anova(BF_region)
-F_stat3 <- anova_tab9["Regions", "F value"]
-p_val3  <- anova_tab9["Regions", "Pr(>F)"]
-df1_3   <- anova_tab9["Regions", "Df"]              # = G-1 = 3
-df2_3   <- anova_tab9["Residuals", "Df"]           # = n-G = n-4
+anova_tab3 <- anova(BF_region)
+F_stat3 <- anova_tab3["Regions_factor", "F value"]
+p_val3  <- anova_tab3["Regions_factor", "Pr(>F)"]
+df1_3   <- anova_tab3["Regions_factor", "Df"]              # = G-1 = 3
+df2_3   <- anova_tab3["Residuals", "Df"]           # = n-G = n-4
 
 cat("Brown–Forsythe test (4 groups by region):\n")
 cat("F =", round(F_stat3, 4), " df1 =", df1_3, " df2 =", df2_3,
     " p-value =", signif(p_val3, 4), "\n")
 
 # Show group means of |deviations| for interpretation
-tapply(z_region, Regions, mean, na.rm = TRUE)
+tapply(z_region, Regions_factor, mean, na.rm = TRUE)
 ```
 
 #### Brown-Forsythe Test by COLONY
-```{r echo=FALSE}
+```{r echo=FALSE, warning=FALSE, message=FALSE}
 data <- data %>%
-  mutate(Colony = case_when(
+  mutate(Colony_factor = factor(case_when(
     FoF == 1 ~ 2,
     FoB == 1 ~ 1,
     TRUE    ~ 0 
-  ))
+  )))
 ```
 
-```{r echo=FALSE}
+```{r echo=FALSE, warning=FALSE, message=FALSE}
 # Group medians of residuals
 attach(data)
-med_resid_colony <- tapply(residuals_baseline, Colony, median, na.rm = TRUE)
+
+med_resid_colony <- tapply(residuals_baseline, Colony_factor, median, na.rm = TRUE)
 
 # Absolute deviations from group medians
-z_colony <- abs(residuals_baseline - med_resid_colony[as.character(Colony)])
+z_colony <- abs(residuals_baseline - med_resid_colony[as.character(Colony_factor)])
+
 
 # One-way ANOVA on deviations
-BF_colony <- lm(z_colony ~ Colony)
+BF_colony <- lm(z_colony ~ Colony_factor)
+#BF_colony <- lm(z_colony ~ as.factor(Colony_factor))
 
 # Test H0 of equal variances across continents
-anova_tab4 <- anova(BF_colony)
-F_stat4 <- anova_tab4["Colony", "F value"]
-p_val4  <- anova_tab4["Colony", "Pr(>F)"]
-df1_4   <- anova_tab4["Colony", "Df"]              # = G-1 = 3
-df2_4   <- anova_tab4["Residuals", "Df"]           # = n-G = n-4
+anova_tab_reg <- anova(BF_colony)
+F_stat4 <- anova_tab_reg["Colony_factor", "F value"]
+p_val4  <- anova_tab_reg["Colony_factor", "Pr(>F)"]
+df1_4   <- anova_tab_reg["Colony_factor", "Df"]              # = G-1 = 2
+df2_4   <- anova_tab_reg["Residuals", "Df"]           # = n-G = n-4
 
 cat("Brown–Forsythe test (3 groups by colony):\n")
 cat("F =", round(F_stat4, 4), " df1 =", df1_4, " df2 =", df2_4,
-    " p-value =", signif(p_val4, 4), "\n")
+    " p-value =", signif(p_val4, 3), "\n")
 
 # Show group means of |deviations| for interpretation
-tapply(z_colony, Colony, mean, na.rm = TRUE)
+tapply(z_colony, Colony_factor, mean, na.rm = TRUE)
 ```
-Based on these tests we cannot reject the null hypothesis of homoskedasticity. Given that this is an F-test, the same remark as before about our sample size holds.
+Based on these tests we cannot reject the null hypothesis of homoskedasticity for colonies. For the regions we reject the null hypothesis of homoskedasticity. Given that this is an F-test, the same remark as before about our sample size holds.
+
+\textcolor{red}{Are the values correct?}
 
 ### Theoretical implications
 
 Under heteroskedasticity OLS remains unbiased (and consistent), but becomes inefficient to GLS. Inference becomes invalid, because the variance formula used in OLS is no longer correct and needs to be adjusted.
 
 ### Addressing "pure" heteroskedasticity
-Disclaimer: heteroskedasticity was not a problem. 
 
 #### White correction: Heteroskedasticity-robust standard errors
 
@@ -554,16 +561,16 @@ library(modelsummary)
 library(sandwich)
 library(broom)
 
-# 1. Extract the fitted values
-y_hat <- fitted.values(baseline)
+# Use sample variance of residuals within each group (simple EGLS)
+sigma2_EDUC <- tapply(residuals_baseline, data$Regions_factor, function(x) mean(x^2, na.rm = TRUE))
 
-# 2. Define weights: if variance ~ 1/y_hat, then weight = y_hat
-w_final <- y_hat
+# Construct weights: w_i = 1 / sigma_g^2  (equivalent to dividing by sigma_g)
+w <- 1 / sigma2_EDUC[as.character(data$Regions_factor)]
 
 # 3. Run the WLS model
 EGLS_RoL <- lm(logY ~ RoL + LAT + D1 + D2 + D3 + FoB + FoF, 
                  data = data, 
-                 weights = w_final)
+                 weights = w)
 
 # 5) Show results
 stargazer(baseline, EGLS_RoL,
@@ -572,8 +579,7 @@ stargazer(baseline, EGLS_RoL,
           column.labels = c("Baseline", "EGLS by RoL"))
 
 ```
-We see that the variance structure is decreasing with an increasing logY. So we assume that the error variance is proportional to 1/logY. We multiplied each value with the square root of its fitted value. This way higher fitted values get a higher weight because they have a lower variance.
-We see that with the EGLS model the R squared drops and the standards errors of the estimators dramatically increase. This may indicate that the given transformation was not relevant.
+Given that the regions are heteroskedastic, we multiplied each value with the variance of the region dummies. This way values with a higher variance get a lower weight. We see that with the EGLS model the R squared increases and the standards errors of the estimators slightly decrease.
 
 ### Theoretically comparing OLS to EGLS
 
@@ -651,7 +657,7 @@ runs_result
 ```
 
 #### Durbin-Watson d-statistic
-```{r echo=FALSE}
+```{r echo=FALSE, warning=FALSE, message=FALSE}
 baseline_OR = lm(logY ~ RoL + LAT + D1 + D2 + D3 + FoB + FoF, data = ordered_data)
 
 library(lmtest)
@@ -685,13 +691,48 @@ The Breusch-Godfrey LM test assumes that the data follows an AR(p) pattern. It i
 
 ### Interpretation and remediation
 
-If autocorrelation would be present in cross-sectional data, this would typically implicate modelmisspecification.
-Under autocorrelation, OLS estimators remain unbiased and normally distributed, but the standard variance formula is incorrect. This leads to biased standard errors and unreliable inference. In addition, OLS is no longer efficient, as GLS provides estimators with lower variance.
-In case remediation is necessary, the more efficient (E)GLS model can remove autocorrelation, or in case of non-stationary data, first-differencing can be considered. In order to keep using OLS, the formula for the standard errors would have to be corrected using the Newey-West correction. However, as our sample size is quite small, doing nothing might be reasonable. Autocorrelation could also be a signal of misspecification, which we will discuss in the next part.
+If autocorrelation would be present in cross-sectional data, this would typically implicate model misspecification. 
+In case of model misspecification OLS is biased and inconsistent, we need to correct the model specification, which we will discuss in the next part. However, as our sample size is quite small, doing nothing might be reasonable.
+
+Under pure autocorrelation (which is not the case here), OLS estimators remain unbiased and normally distributed, but the standard variance formula is incorrect. This leads to biased standard errors and unreliable inference. In addition, OLS is no longer efficient, as GLS provides estimators with lower variance.
+In case remediation is necessary, the more efficient (E)GLS model can remove autocorrelation, or in case of non-stationary data, first-differencing can be considered. In order to keep using OLS, the formula for the standard errors would have to be corrected using the Newey-West correction. Autocorrelation could also be a signal of misspecification, which we will discuss in the next part.
 
 ## 4.6. Model Specification
 
 ### Alternative specifications
+#### Ramsey’s RESET test 
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+library(lmtest)
+resettest(baseline, power = 2:3, type = "fitted")
+```
+According to the Ramsey Reset test we cannot reject the null of correct functional form. The powered fitted values are not jointly significant, confirming that the linear specification is not necessarily misspecified. A non-linear transformation of logY is not warranted.
+
+#### Lagrange Multiplier (LM) test
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+# Create polynomial terms
+RoL2 <- RoL^2
+RoL3 <- RoL^3
+LAT2 <- LAT^2
+LAT3 <- LAT^3
+
+# Run the auxiliary regression
+aux_LM <- lm(residuals_baseline ~ RoL + RoL2 + RoL3 + LAT + LAT2 + LAT3 + D1 + D2 + D3 + FoF + FoB, data = data)
+
+# Calculate LM test statistic and p-value
+R2_LM <- summary(aux_LM)$r.squared
+n_LM <- nrow(data)
+k_LM <- 4  # Restrictions: RoL2, RoL3, LAT2, LAT3
+LM_stat <- n_LM * R2_LM
+p_value_LM <- pchisq(LM_stat, df = k_LM, lower.tail = FALSE)
+
+cat("LM statistic:", LM_stat, "\n")
+cat("p-value:", p_value_LM, "\n")
+```
+
+We cannot reject the null. Higher-order terms of RoL and LAT are not significant in explaining the residuals, confirming linearity. Both RESET and LM tests agree: the linear model is not misspecified.
+
+\textcolor{red}{Are changes correct?}
+
 #### Extend the model by allowing the effect of RoL to differ across continents
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE}
@@ -764,7 +805,7 @@ cat("Magnitude RoL:", round(mag_HC, 4)      , "     Magnitude HC", stats_HC["HC"
 cat("Sign RoL:     ", sign_HC               , "          Sign HC:       ", ifelse(stats_HC["HC", "Estimate"] > 0, "+", "-"), "\n")
 cat("p-value RoL:  ", signif(p_val_HC, 4)   , "   p-value HC:  ", signif(stats_HC["HC", "Pr(>|t|)"], 4), "\n")
 ```
-The coefficient for RoL dropped significantly (from 0.8207 to 0.4277) when HC was added. This suggests a strong relationship between institutions and human capital.
+The coefficient for RoL dropped significantly (from 0.8207 to 0.4277) when HC was added. This suggests a strong relationship between institutions and human capital. RoL is still highly significant and positive. RoL is robust to the addition of HC in the model. 
 
 HC as a Confounder: If we view HC as a confounder, it means HC affects both the quality of institutions and GDP. In this view, the baseline model was overestimating the effect of RoL because it was "soaking up" the effect of omitted human capital.
 HC as a Mediator: If we view HC as a mediator, it means good institutions (RoL) lead to better HC, which in turn leads to higher logY. In this case, the drop in the coefficient is expected because HC is the channel through which institutions work. By including it, we are measuring only the direct effect of RoL, ignoring its indirect effect via education. 
@@ -774,21 +815,26 @@ The Baseline Model without Human Capital stands as the most appropriate specific
 
 Economically, institutions are recognized as "deep determinants" of growth that precede and incentivize investments in education and physical capital. The Baseline Model captures the total effect of institutions, which includes both their direct influence on productivity and their indirect influence through the development of a skilled workforce. By contrast, the model with Human Capital only measures the narrow direct effect, which underrepresents the actual role of the Rule of Law in economic development. Additionally, Human Capital is often endogenous—where higher income levels lead to better education—which can introduce simultaneity bias. Therefore, the Baseline Model remains the most robust and theoretically sound representation of how institutional quality drives economic performance.
 
-## 4.7. Endogeneity
+## 4.7. Endogeneity and Instrumental Variables
+### Baseline model (without HC )
+RoL is stochastic and endogenous. D1, D2, D3, FoF, FoB and LAT are all stochastic and exogenous. If one or more regressor is endogenous OLS is biased, inconsistent and not efficient. 
+
 ### 2SLS estimation
 ```{r}
+data <- data %>%
+mutate(QOB_factor = factor(QOB))
 
 # First stage estimation
-first_stage=lm(logY ~ logSM + logPD + RoL + LAT + D1 + D2 + D3 + FoB + FoF, data = data)
+first_stage=lm(EDUC ~ QOB_factor + AGE + RACE + MARRIED + URBAN + REGION_factor, data = data)
 summary(first_stage)
 
 library(car)
-linearHypothesis(first_stage, matchCoefs(first_stage, "logSM"))
+linearHypothesis(first_stage, matchCoefs(first_stage, "QOB_factor"))
 
 # Second stage estimation
 library(AER)
 twosls=ivreg(WAGE ~ EDUC + AGE + RACE + MARRIED + URBAN + REGION_factor | QOB_factor + AGE + RACE + MARRIED + URBAN + REGION_factor, data = data)
-summary (twosls, diagnostics=TRUE) #NIET MEER SIGNIFICANT --> WIJST OP WEAK INSTRUMENT | F is below 10 (fail on relevance condition)
+summary (twosls, diagnostics=TRUE)
 
 stargazer(baseline, twosls,
           type = "text",
@@ -799,6 +845,9 @@ stargazer(baseline, twosls,
           no.space = TRUE)
 ```
 
+
+
+
 ### Testing for Endogeneity
 ```{r}
 res_first=first_stage$residuals
@@ -806,3 +855,7 @@ res_first=first_stage$residuals
 haus=lm(WAGE ~ EDUC + AGE + RACE + MARRIED + URBAN + REGION_factor + res_first, data=data)
 summary (haus)
 ```
+
+
+
+
