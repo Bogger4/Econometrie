@@ -1,0 +1,930 @@
+---
+title: "Econometrics case"
+author: "Group 9 & Group 18"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+show_interpretation <- TRUE
+```
+
+# STEP 1 - Baseline Empirical Specification and Hypotheses
+```{r echo=FALSE, results='asis'}
+if (show_interpretation) {
+  cat("We aim to estimate the total causal effect of RoL on income.
+
+Latitude, continent dummies, and colonial origin are included as controls since they likely influence both institutions and income on their own, leaving them out would induce bias in our estimate of the RoL effect.
+
+We decide to exclude Human Capital, as we believe it is a mediator. When you control for a mediator, you block the indirect causal channel and only estimate the direct effect. By excluding it we can estimate the total effect (direct + indirect) of RoL on income.
+
+Our baseline model is as follows:")
+}
+```
+
+$$\text{logY}_i = \beta_0 + \beta_1 \text{RoL}_i + \beta_2 \text{LAT}_i + \beta_3 D_{1i} + \beta_4 D_{2i} + \beta_5 D_{3i} + \beta_6 \text{FoB}_i + \beta_7 \text{FoF}_i + \mu_i$$
+
+
+```{r echo=FALSE, results='asis'}
+  cat("Our assumptions are:\n
+      - We know and have included all the confounders (no omitted variables)\n
+      - No reverse causality\n
+      - Human capital is a mediator and is not included\n
+      ")
+```
+
+## Hypotheses
+
+\begin{table}[h]
+\centering
+\renewcommand{\arraystretch}{1.5} % Adds vertical padding for readability
+\begin{tabular}{|p{2.5cm}|c|p{4cm}|l|p{3.5cm}|}
+\hline
+\textbf{Variable} & \textbf{Direction} & \textbf{Rationale} & \textbf{One/two-sided} & \textbf{$H_0, H_1$} \\ \hline
+RoL & + & Better institutions lead to more income & One-sided & $H_0: \beta_1 \le 0$ \newline $H_1: \beta_1 > 0$ \\ \hline
+LAT (latitude) & ? & Differences in geographical conditions & Two-sided & $H_0: \beta_2 = 0$ \newline $H_1: \beta_2 \neq 0$ \\ \hline
+D1/D2/D3 (continent) & ? & Differences in regional conditions & Two-sided & $H_0: \beta_3, \beta_4, \beta_5 = 0$ \newline $H_1: \text{At least one} \neq 0$ \\ \hline
+FoF, FoB (colonizer) & ? & Differences in former colonizer & Two-sided & $H_0: \beta_6, \beta_7 = 0$ \newline $H_1: \text{At least one} \neq 0$ \\ \hline
+\end{tabular}
+\end{table}
+
+# STEP 2 - Load and Explore the Data
+```{r}
+# Load the data
+data <- read.csv("Data.csv", sep = ';', row.names = 'X')
+```
+
+## STEP 2.1 - Overview of all the data
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+#Load the necessary libraries
+library("psych")
+library("dplyr")
+library(corrplot)
+library(ggplot2)
+```
+```{r echo=TRUE}
+#Overview of all the data
+head(data)
+summary(data)
+describe(data)
+```
+```{r echo=FALSE}
+ #Compute covariance and correlation matrix (excluding region dummies)
+data_corr <- data %>%
+  select(logY, RoL, LAT, FoF, FoB)
+
+cov_matrix <- cov(data_corr, use = "complete.obs")
+cor_matrix <- cor(data_corr, use = "complete.obs")
+```
+```{r echo=TRUE}
+cov(data_corr, use = "complete.obs")
+cor(data_corr, use = "complete.obs")
+#Visualize the correlation matrix (excluding region dummies)
+corrplot(cor_matrix, method = "color")
+```
+
+
+## STEP 2.2 - Overview for each region
+
+```{r echo=FALSE}
+
+attach(data)
+index_africa <- D1 == TRUE
+index_asia <- D2 == TRUE
+index_america <- D3 == TRUE
+data_africa <- data[index_africa, ]
+data_asia <- data[index_asia, ]
+data_america <- data[index_america, ]
+```
+
+### 1. Africa
+
+#### 1.1 Overview
+
+```{r echo=TRUE}
+#Overview of all the data
+head(data_africa)
+summary(data_africa)
+describe(data_africa)
+```
+
+#### 1.2 Covariance and correlation matrix
+
+```{r echo=FALSE}
+#Compute covariance and correlation matrix (excluding region dummies)
+data_corr_af <- data_africa %>%
+  select(logY, RoL, LAT, FoF, FoB)
+
+cov_matrix <- cov(data_corr_af, use = "complete.obs")
+cor_matrix <- cor(data_corr_af, use = "complete.obs")
+```
+```{r echo=TRUE}
+cov(data_corr_af, use = "complete.obs")
+cor(data_corr_af, use = "complete.obs")
+#Visualize the correlation matrix (excluding region dummies)
+corrplot(cor_matrix, method = "color")
+```
+
+### 2. Asia
+
+#### 2.1 Overview
+
+```{r echo=TRUE}
+#Overview of all the data
+head(data_asia)
+summary(data_asia)
+describe(data_asia)
+```
+
+#### 2.2 Covariance and correlation matrix
+
+```{r echo=FALSE}
+#Compute covariance and correlation matrix (excluding region dummies)
+data_corr_as <- data_asia %>%
+  select(logY, RoL, LAT, FoF, FoB)
+
+cov_matrix <- cov(data_corr_as, use = "complete.obs")
+cor_matrix <- cor(data_corr_as, use = "complete.obs")
+```
+```{r echo=TRUE}
+cov(data_corr_as, use = "complete.obs")
+cor(data_corr_as, use = "complete.obs")
+#Visualize the correlation matrix (excluding region dummies)
+corrplot(cor_matrix, method = "color")
+```
+
+### 3. America
+
+#### 3.1 Overview
+
+```{r echo=TRUE}
+#Overview of all the data
+head(data_america)
+summary(data_america)
+describe(data_america)
+```
+
+#### 3.2 Covariance and correlation matrix
+
+```{r echo=FALSE}
+#Compute covariance and correlation matrix (excluding region dummies)
+data_corr_am <- data_america %>%
+  select(logY, RoL, LAT, FoF, FoB)
+
+cov_matrix <- cov(data_corr_am, use = "complete.obs")
+cor_matrix <- cor(data_corr_am, use = "complete.obs")
+```
+```{r echo=TRUE}
+cov(data_corr_am, use = "complete.obs")
+cor(data_corr_am, use = "complete.obs")
+#Visualize the correlation matrix (excluding region dummies)
+corrplot(cor_matrix, method = "color")
+```
+
+## STEP 2.3 - Scatterplot of logY and RoL
+
+```{r echo=FALSE}
+ggplot(data = data, aes(x = RoL, y = logY)) +
+  geom_point(color = "purple")
+```
+\newpage
+
+# STEP 3 - Estimate and Analyze the Baseline Specification
+
+## 3.1. Estimate the Baseline Specification with OLS
+
+```{r echo=TRUE, warning=FALSE, message=FALSE}
+# Fit the model
+library(stargazer)
+baseline <- lm(logY ~ RoL + LAT + D1 + D2 + D3 + FoF + FoB, data = data)
+stargazer(data = baseline, type = "text", title = "OLS baseline")
+```
+
+## 3.2. Interpret the estimated coefficients
+
+To test the significance of the coefficient of RoL we perform a one sided test. Our t-statistic is as follows:
+
+$$t = \frac{0.821-0}{0.158} = 5.196$$
+$$Critical\ value = t_{0.001; 54} = 3.232$$
+$$5.196 > 3.232 \to We \ reject \ on \ the \ 0.1\% \ significance \ level$$
+
+RoL: coefficient is significant on the 1% significance level. A one unit increase of RoL leads to a 127.28% increase in GDP per capita, ceteris paribus. This is consistent with the institutional hypothesis.\newline
+
+The controls are not significant on the 5% significance level. Since they are all two-sided tests, the t-statistics and p-values are calculated by the lm-function.\newline
+
+Our regressors explain the variation in log GDP per capita for 65.5%. The included regressors are jointly significant on the 1% significance level. 
+
+## 3.3 F-tests
+
+```{r warning=FALSE, message=FALSE}
+library(car)
+f_test_region <- linearHypothesis(baseline, 
+                                  c("D1 = 0", "D2 = 0", "D3 = 0"))
+f_test_region
+```
+
+The continent dummies are jointly significant on the 1% significance level. At least one of the continent dummies has explanatory power.
+
+
+```{r warning=FALSE, message=FALSE}
+f_test_colonizer <- linearHypothesis(baseline, 
+                                  c("FoF = 0", "FoB = 0"))
+f_test_colonizer
+```
+
+The former colonizer dummies are not jointly significant on the 5% significance level. None of the former colonizer dummies have explanatory power.
+
+```{r warning=FALSE, message=FALSE}
+f_test_joint <- linearHypothesis(baseline, 
+                                  c("LAT = 0", "D1 = 0", "D2 = 0", "D3 = 0", "FoF = 0", "FoB = 0"))
+f_test_joint
+```
+
+The control variables are jointly significant. At least one of the control variables has explanatory power.
+
+# STEP 4 - Evaluating Gauss-Markov Assumptions and Applying Remedial Measures
+
+## 4.1. Nature of the regressors
+
+
+Given that over repeated sampling, different countries can be observed, the values of D1, D2, D3, FoF, FoB and LAT are all stochastic. Furthermore, all of these have an effect on Human Capital, which is a mediator variable not included in the model and is therefore in the error term. This ultimately means that the aforementioned control variables are correlated with the error terms, and thus endogeneous.\newline
+RoL is stochastic and endogenous. It almost certainly correlates with the error term. This is because log GDP per capita affects RoL (see dashed line in causal diagram).\newline
+This implies that OLS becomes biased and inconsistent which means that the coefficients do not measure the true causal effect.
+Remediation is required. This will be covered in step 4(g).
+
+## 4.2. Distribution of Error Terms
+
+### 4.2.1. Histogram of Residuals
+
+```{r warning=FALSE}
+library(ggplot2)
+library(car)
+
+# Extract residuals
+residuals_baseline <- residuals(baseline)
+
+# Histogram
+ggplot(data.frame(residuals_baseline), aes(x = residuals_baseline)) +
+  geom_histogram(aes(y = ..density..), bins = 30, fill = "pink", color = "#FF2F92") +
+  geom_density(color = "purple") +
+  ggtitle("Histogram of Residuals")
+```
+
+This does not look normally distributed. The left side is skewed. We need to test it to be sure.
+
+### 4.2.2. Jarque-Bera Test for Normality
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+library(tseries)
+jarque.bera.test(residuals_baseline)
+```
+
+We cannot reject the H0 hypothesis on the 5% significance level. This means that we can not say that the error terms are not normality distributed on the 5% significance level.\newline
+Side note: We have a small sample size. In small samples, the test may have low power, meaning it may fail to detect deviations from normality.\newline\newline
+Normality does not have an effect on OLS point estimation. If the error term is not normally distributed, our t- and F-tests are unreliable because they assume normality of the error term. However, since we cannot say that the error term is not normally distributed, our t- and F-test should remain reliable.\newline
+Remediation is not necessary in this step.
+
+## 4.3. Multicollinearity
+
+We compute the variance inflation factor:
+
+```{r echo=FALSE}
+library(car)
+vif(baseline)
+```
+We see that we get high values for D1 and D3. We think this is because there are barely any countries that belong to the fourth category (D1 = 0, D2 = 0, D3 = 0). If we give each category a dummy variable, we get perfect multicollinearity. This situation doesn't differ much from the situation of perfect multicollinearity. This is why we think D1 and D3 have such high VIF's.They are still all below 10 so there is no outrageous multicollinearity.\newline
+Multicollinnearity is not a theoretical issue. It does not affect unbiasedness or consistency and remains the most efficient estimator. However, a high degree of multicollinearity can lead to larger variances of the estimators and thus wider confidence intervals and lower t-statistics. This decreases the power of individual inferential tests. The tests have a hard time distinguishing the separate effect of every variable. The joint tests do not have an issue. Multicollinearity only leads to practical problems.\newline
+Action should not be taken because multicollinearity mostly reflects a lack of information in the data.
+
+Dan stelde ze ook nog een vraag: is het slim om een variable te droppen?
+NOOOO want je ging ervan uit dat je baseline specification correct was, dus geen omitted variables. Als je een variable omit dan heb je dus WEL een omitted variable bias, waardoor je estimator **biased** and **inconsistent** wordt (want endogeneity), aka het is ASS. Plus je weet ook niet elke je moet droppen want je hebt enkel joint test gedaan en de individual zijn niet betrouwbaar.
+
+\newpage
+
+## 4.4 Heteroskedasticity
+### Graphical detection of heteroskedasticity
+#### Plot of Squared Residuals vs. Fitted Values
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, fig.width=6, fig.height=4, fig.align='center'}
+y_hat = baseline$fitted.values
+
+res_sq <- residuals(baseline)^2
+
+ggplot(data.frame(y_hat, res_sq), aes(x = y_hat, y = res_sq)) +
+  geom_point(colour = "yellow", size = 1) +  # Points
+  geom_smooth(method = "loess", se = FALSE, colour = "#FF2F92") +  # Trend line
+  labs(
+    title = "Squared Residuals vs. Fitted Values",
+    x = "Fitted Values (log Y)",
+    y = "Squared Residuals"
+  ) +
+  theme_minimal(base_size = 12) +
+  theme(
+    plot.background = element_rect(fill = "grey90", colour = NA),   # Outer box
+    panel.background = element_rect(fill = "purple", colour = NA),  # Plot area
+    panel.grid.major = element_line(colour = "white"),              # Grid lines
+    panel.grid.minor = element_blank()
+  )
+```
+
+#### Plot of Squared Residuals vs. RoL
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, fig.width=6, fig.height=4, fig.align='center'}
+attach(data)
+
+ggplot(data.frame(RoL, res_sq), aes(x = RoL, y = res_sq)) +
+  geom_point(colour = "yellow", size = 1) +  # Points
+  geom_smooth(method = "loess", se = FALSE, colour = "#FF2F92") +  # Trend line
+  labs(
+    title = "Squared Residuals vs. RoL",
+    x = "RoL",
+    y = "Squared Residuals"
+  ) +
+  theme_minimal(base_size = 12) +
+  theme(
+    plot.background = element_rect(fill = "grey90", colour = NA),   # Outer box
+    panel.background = element_rect(fill = "purple", colour = NA),  # Plot area
+    panel.grid.major = element_line(colour = "white"),              # Grid lines
+    panel.grid.minor = element_blank()
+  )
+```
+
+#### Plot of Squared Residuals vs. LAT
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, fig.width=6, fig.height=4, fig.align='center'}
+attach(data)
+
+ggplot(data.frame(LAT, res_sq), aes(x = LAT, y = res_sq)) +
+  geom_point(colour = "yellow", size = 1) +  # Points
+  geom_smooth(method = "loess", se = FALSE, colour = "#FF2F92") +  # Trend line
+  labs(
+    title = "Squared Residuals vs. LAT",
+    x = "LAT",
+    y = "Squared Residuals"
+  ) +
+  theme_minimal(base_size = 12) +
+  theme(
+    plot.background = element_rect(fill = "grey90", colour = NA),   # Outer box
+    panel.background = element_rect(fill = "purple", colour = NA),  # Plot area
+    panel.grid.major = element_line(colour = "white"),              # Grid lines
+    panel.grid.minor = element_blank()
+  )
+```
+
+### Plot of Squared Residuals vs. Regions
+
+```{r echo= FALSE, warning=FALSE, message=FALSE}
+data <- data %>%
+  mutate(Regions = case_when(
+    D3 == 1 ~ 3,
+    D2 == 1 ~ 2,
+    D1 == 1 ~ 1,
+    TRUE    ~ 0 
+  ))
+```
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, fig.width=6, fig.height=4, fig.align='center'}
+attach(data)
+
+ggplot(data.frame(Regions, res_sq), aes(x = Regions, y = res_sq)) +
+  geom_point(colour = "yellow", size = 1) +  # Points
+  geom_smooth(method = "loess", se = FALSE, colour = "#FF2F92") +  # Trend line
+  labs(
+    title = "Squared Residuals vs. Regions",
+    x = "Regions",
+    y = "Squared Residuals"
+  ) +
+  theme_minimal(base_size = 12) +
+  theme(
+    plot.background = element_rect(fill = "grey90", colour = NA),   # Outer box
+    panel.background = element_rect(fill = "purple", colour = NA),  # Plot area
+    panel.grid.major = element_line(colour = "white"),              # Grid lines
+    panel.grid.minor = element_blank()
+  )
+```
+
+On first sight, we notice a decrease in the spread of the residuals in the plots. For Africa (D1) we saw a slight increase contrary to the other regions. To conclude wether there is heteroskedadasticity, further testing is required. 
+
+### Formal tests for heteroskedasticity
+
+### Goldfeld-Quandt Test
+
+Two-sided Goldfeld-Quandt test (hereinafter GQ1; no specified direction of variance change):
+$$
+H_0: \sigma_1^2 = \sigma_2^2 \quad \text{vs.} \quad H_1: \sigma_1^2 \neq \sigma_2^2
+$$
+One-sided GQ test for increasing variance (hereinafter GQ2):
+$$
+H_0: \sigma_2^2 \leq \sigma_1^2   \quad \text{vs.} \quad H_1: \sigma_2^2 > \sigma_1^2
+$$
+One-sided GQ test for decreasing variance (hereinafter GQ3):
+$$
+H_0: \sigma_2^2 \ge \sigma_1^2 \quad \text{vs.} \quad H_1: \sigma_2^2 < \sigma_1^2
+$$
+
+##### Goldfeld-Quandt Test by RoL
+
+```{r warning=FALSE, message=FALSE, echo=FALSE}
+library(lmtest)
+
+GQ1_RoL=gqtest(baseline, fraction = 10, order.by = RoL, alternative = "two.sided")
+GQ1_RoL
+
+GQ2_RoL=gqtest(baseline, fraction = 10, order.by = RoL)
+GQ2_RoL
+
+GQ3_RoL=gqtest(baseline, fraction = 10, order.by = -RoL) # for decreasing variance
+GQ3_RoL
+```
+Given that we saw a decreasing trend in variance, the third test is most relevant in our case. The p-value shows that we cannot reject the hypothesis of homoskedasticity. We assume that the residuals are normally distributed in order to perform this test. As shown in 4.2. this is the case.
+
+#### White’s General Heteroskedasticity Test
+```{r warning=FALSE, echo=FALSE}
+# Auxiliary regression for White test (excluding interactions)
+aux_model <- lm(res_sq ~ RoL + LAT + D1 + D2 + D3 + FoF + FoB + I(RoL^2) + I(LAT^2),
+                data = data)
+
+stargazer(aux_model, type="text")
+
+# White's test statistic 
+n <- nrow(data)
+R2_aux <- summary(aux_model)$r.squared
+white_stat <- n * R2_aux
+df_white <- length(coef(aux_model)) - 1
+p_value_white <- pchisq(white_stat, df_white, lower.tail = FALSE)
+
+# Summary test result table 
+data.frame(
+  Statistic = c("Test Statistic", "Degrees of Freedom", "p-value"),
+  Value = c(round(white_stat, 4), df_white, formatC(p_value_white, format = "e", digits = 4))
+) |> knitr::kable(caption = "White's Heteroskedasticity Test Results")
+
+summary(aux_model)$r.squared
+```
+The stargazer shows us that none of the coefficients are significant in the auxiliary regression. This leads us to believe that the error variance does not depend on the regressors. We dropped the interaction variables because of our small sample size. Including the interaction terms would reduce the degrees of freedom too much. This is important because the null hypothesis assumes an infinitely large sample size.
+
+#### Brown-Forsythe Test by REGION
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+# Group medians of residuals
+data <- data %>%
+mutate(Regions_factor = factor(Regions))
+attach(data)
+
+med_resid_region <- tapply(residuals_baseline, Regions_factor, median, na.rm = TRUE)
+
+# Absolute deviations from group medians
+z_region <- abs(residuals_baseline - med_resid_region[as.character(Regions_factor)])
+
+# One-way ANOVA on deviations
+BF_region <- lm(z_region ~ Regions_factor)
+
+# Test H0 of equal variances across continents
+anova_tab3 <- anova(BF_region)
+F_stat3 <- anova_tab3["Regions_factor", "F value"]
+p_val3  <- anova_tab3["Regions_factor", "Pr(>F)"]
+df1_3   <- anova_tab3["Regions_factor", "Df"]              # = G-1 = 3
+df2_3   <- anova_tab3["Residuals", "Df"]           # = n-G = n-4
+
+cat("Brown–Forsythe test (4 groups by region):\n")
+cat("F =", round(F_stat3, 4), " df1 =", df1_3, " df2 =", df2_3,
+    " p-value =", signif(p_val3, 4), "\n")
+
+# Show group means of |deviations| for interpretation
+tapply(z_region, Regions_factor, mean, na.rm = TRUE)
+```
+
+#### Brown-Forsythe Test by COLONY
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+data <- data %>%
+  mutate(Colony_factor = factor(case_when(
+    FoF == 1 ~ 2,
+    FoB == 1 ~ 1,
+    TRUE    ~ 0 
+  )))
+```
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+# Group medians of residuals
+attach(data)
+
+med_resid_colony <- tapply(residuals_baseline, Colony_factor, median, na.rm = TRUE)
+
+# Absolute deviations from group medians
+z_colony <- abs(residuals_baseline - med_resid_colony[as.character(Colony_factor)])
+
+
+# One-way ANOVA on deviations
+BF_colony <- lm(z_colony ~ Colony_factor)
+#BF_colony <- lm(z_colony ~ as.factor(Colony_factor))
+
+# Test H0 of equal variances across continents
+anova_tab_reg <- anova(BF_colony)
+F_stat4 <- anova_tab_reg["Colony_factor", "F value"]
+p_val4  <- anova_tab_reg["Colony_factor", "Pr(>F)"]
+df1_4   <- anova_tab_reg["Colony_factor", "Df"]              # = G-1 = 2
+df2_4   <- anova_tab_reg["Residuals", "Df"]           # = n-G = n-4
+
+cat("Brown–Forsythe test (3 groups by colony):\n")
+cat("F =", round(F_stat4, 4), " df1 =", df1_4, " df2 =", df2_4,
+    " p-value =", signif(p_val4, 3), "\n")
+
+# Show group means of |deviations| for interpretation
+tapply(z_colony, Colony_factor, mean, na.rm = TRUE)
+```
+Based on these tests we cannot reject the null hypothesis of homoskedasticity for colonies. For the regions we reject the null hypothesis of homoskedasticity. Given that this is an F-test, the same remark as before about our sample size holds.
+
+\textcolor{red}{Are the values correct?}
+
+### Theoretical implications
+
+Under heteroskedasticity OLS remains unbiased (and consistent), but becomes inefficient to GLS. Inference becomes invalid, because the variance formula used in OLS is no longer correct and needs to be adjusted.
+
+### Addressing "pure" heteroskedasticity
+
+#### White correction: Heteroskedasticity-robust standard errors
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+library(sandwich)
+baseline_White = baseline
+White_se=sqrt(diag(vcovHC(baseline_White)))
+stargazer(baseline, baseline_White,
+          type = "text",
+          style = "all",
+          se = list(NULL, White_se),
+          column.labels = c("Baseline", "White SE"))
+```
+
+#### EGLS (Feasible GLS) estimator
+```{r echo=FALSE, warning=FALSE}
+library(modelsummary)
+library(sandwich)
+library(broom)
+
+# Use sample variance of residuals within each group (simple EGLS)
+sigma2_EDUC <- tapply(residuals_baseline, data$Regions_factor, function(x) mean(x^2, na.rm = TRUE))
+
+# Construct weights: w_i = 1 / sigma_g^2  (equivalent to dividing by sigma_g)
+w <- 1 / sigma2_EDUC[as.character(data$Regions_factor)]
+
+# 3. Run the WLS model
+EGLS_RoL <- lm(logY ~ RoL + LAT + D1 + D2 + D3 + FoB + FoF, 
+                 data = data, 
+                 weights = w)
+
+# 5) Show results
+stargazer(baseline, EGLS_RoL,
+          type = "text",
+          style = "all",
+          column.labels = c("Baseline", "EGLS by RoL"))
+
+```
+Given that the regions are heteroskedastic, we multiplied each value with the variance of the region dummies. This way values with a higher variance get a lower weight. We see that with the EGLS model the R squared increases and the standards errors of the estimators slightly decrease.
+
+### Theoretically comparing OLS to EGLS
+
+The efficiency and consistency of EGLS depends on the correctness of the assumed heteroskedasticity pattern. EGLS standard errors are not necessarily lower than OLS standard errors as OLS incorrectly assumes homoskedasticity. In the case of heteroskedasticity, EGLS is consistent and asymptotically efficient.
+
+## 4.5. Autocorrelation
+
+### Graphical inspection of Autocorrelation
+```{r echo=FALSE}
+# Create dataframe with residuals and RoL
+res_RoL_df <- data.frame(RoL = RoL, Residuals = residuals(baseline))
+
+# Order by RoL
+res_RoL_df <- res_RoL_df[order(res_RoL_df$RoL), ]
+res_RoL_df$Index <- 1:nrow(res_RoL_df)
+
+# Plot
+ggplot(res_RoL_df, aes(x = Index, y = Residuals)) +
+  geom_point(colour = "yellow", size = 1) +  # Points
+  geom_smooth(method = "loess", se = FALSE, colour = "#FF2F92") +  # Trend line
+  labs(
+    title = "Residuals vs. Observation Index (Ordered by RoL)",
+    x = "Ordered Index by RoL",
+    y = "Residuals"
+  ) +
+  theme_minimal(base_size = 12) +
+  theme(
+    plot.background = element_rect(fill = "grey90", colour = NA),   # Outer box
+    panel.background = element_rect(fill = "purple", colour = NA),  # Plot area
+    panel.grid.major = element_line(colour = "white"),              # Grid lines
+    panel.grid.minor = element_blank()
+  )
+
+```
+Based on this graph, it is difficult to see if there is some sort of negative correlation or no autocorrelation at all. This needs to be formally tested.
+
+### Formal autocorrelation tests 
+
+### Runs test
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+# Order data by EDUC
+ordered_data <- data[order(data$RoL), ]
+res_OR <- residuals(lm(logY ~ RoL + LAT + D1 + D2 + D3 + FoF + FoB, data = ordered_data))
+
+# Create sign vector (+1 for positive, -1 for negative residuals)
+signs <- ifelse(res_OR >= 0, 1, -1)
+
+# Count runs
+runs_count <- function(signs) {
+  r <- 1
+  for (i in 2:length(signs)) {
+    if (signs[i] != signs[i - 1]) {
+      r <- r + 1
+    }
+  }
+  return(r)
+}
+
+R <- runs_count(signs)
+N1 <- sum(signs == 1)
+N2 <- sum(signs == -1)
+N <- N1 + N2
+E_R <- 2 * N1 * N2 / N + 1
+s_R <- sqrt(2 * N1 * N2 * (2 * N1 * N2 - N) / (N^2 * (N - 1)))
+
+results_R <- c(R, E_R, E_R - 1.96 * s_R, E_R + 1.96 * s_R)
+names(results_R) <- c("Observed Runs", "Expected Runs", "95% Lower Bound", "95% Upper Bound")
+results_R
+
+# Comparison using runs.test:
+library(tseries)
+sign_residuals <- factor(signs)
+runs_result <- runs.test(sign_residuals)
+runs_result
+```
+
+#### Durbin-Watson d-statistic
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+baseline_OR = lm(logY ~ RoL + LAT + D1 + D2 + D3 + FoB + FoF, data = ordered_data)
+
+library(lmtest)
+dwtest(baseline_OR)
+```
+
+#### Breusch-Godfrey LM test
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+bgtest(baseline_OR, order = 1)
+```
+
+These tests conclude that there is not autocorrelation.
+
+### Specific assumption of the previous test
+
+### Runs test
+
+The runs test has no major assumptions, as it is non-parametric and thus does not have any functional form related to it.
+
+### Durbin-Watson d-test
+
+This test assumes non-stachastic estimators, which is not the case. Nevertheless, there are usually no big implication.
+Furthermore, the error terms should follow a AR(1) process. If this not true, like in this case, its power to detect autocorrelation decreases.
+Thridly, the error terms should be normally distributed, which is the case.
+
+The most critical assumptions for the Durbin-Watson test is that the regression model does not include lagged dependent variables.
+
+### Breusch-Godfrey LM test
+
+The Breusch-Godfrey LM test assumes that the data follows an AR(p) pattern. It is less powerful in small samples.
+
+### Interpretation and remediation
+
+If autocorrelation would be present in cross-sectional data, this would typically implicate model misspecification. 
+In case of model misspecification OLS is biased and inconsistent, we need to correct the model specification, which we will discuss in the next part. However, as our sample size is quite small, doing nothing might be reasonable.
+
+Under pure autocorrelation (which is not the case here), OLS estimators remain unbiased and normally distributed, but the standard variance formula is incorrect. This leads to biased standard errors and unreliable inference. In addition, OLS is no longer efficient, as GLS provides estimators with lower variance.
+In case remediation is necessary, the more efficient (E)GLS model can remove autocorrelation, or in case of non-stationary data, first-differencing can be considered. In order to keep using OLS, the formula for the standard errors would have to be corrected using the Newey-West correction. Autocorrelation could also be a signal of misspecification, which we will discuss in the next part.
+
+## 4.6. Model Specification
+
+### Alternative specifications
+#### Ramsey’s RESET test 
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+library(lmtest)
+resettest(baseline, power = 2:3, type = "fitted")
+```
+According to the Ramsey Reset test we cannot reject the null of correct functional form. The powered fitted values are not jointly significant, confirming that the linear specification is not necessarily misspecified. A non-linear transformation of logY is not warranted.
+
+#### Lagrange Multiplier (LM) test
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+# Create polynomial terms
+RoL2 <- RoL^2
+RoL3 <- RoL^3
+LAT2 <- LAT^2
+LAT3 <- LAT^3
+
+# Run the auxiliary regression
+aux_LM <- lm(residuals_baseline ~ RoL + RoL2 + RoL3 + LAT + LAT2 + LAT3 + D1 + D2 + D3 + FoF + FoB, data = data)
+
+# Calculate LM test statistic and p-value
+R2_LM <- summary(aux_LM)$r.squared
+n_LM <- nrow(data)
+k_LM <- 4  # Restrictions: RoL2, RoL3, LAT2, LAT3
+LM_stat <- n_LM * R2_LM
+p_value_LM <- pchisq(LM_stat, df = k_LM, lower.tail = FALSE)
+
+cat("LM statistic:", LM_stat, "\n")
+cat("p-value:", p_value_LM, "\n")
+```
+
+We cannot reject the null. Higher-order terms of RoL and LAT are not significant in explaining the residuals, confirming linearity. Both RESET and LM tests agree: the linear model is not misspecified.
+
+\textcolor{red}{Are changes correct?}
+
+#### Extend the model by allowing the effect of RoL to differ across continents
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+# Log-linear transformation of the baseline
+
+baseline_inter_RoL <- lm(logY ~ RoL + LAT + D1 + D2 + D3 + FoF + FoB + RoL*D1 + RoL*D2 + RoL*D3 , data = data)
+
+# Stargazer output
+library(stargazer)
+stargazer(baseline, baseline_inter_RoL,
+          type = "text",
+          title = "Baseline with RoL across continents",
+          column.labels = c("Level", "Log-Level"),
+          align = TRUE,
+          no.space = TRUE)
+```
+
+```{r echo=FALSE}
+resettest(baseline_inter_RoL, power = 2:3, type = "fitted")
+```
+
+```{r warning=FALSE, message=FALSE}
+f_test_inter_RoL <- linearHypothesis(baseline_inter_RoL, 
+                                  c("RoL:D1 = 0", "RoL:D2 = 0", "RoL:D3 = 0"))
+f_test_inter_RoL
+```
+
+Since the p-value (0.1209) is greater than 0.05, we fail to reject the null hypothesis. The interaction terms are not jointly significant. This suggests that the impact of the Rule of Law on logY does not statistically differ significantly across the different regions defined by D1,D2, and D3.
+
+#### Extend the specification by including human capital
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+# Fit the model with higher-order EDUC
+baseline_HC <- lm(logY ~ RoL + LAT + D1 + D2 + D3 + FoF + FoB + HC, data = data)
+
+# Use stargazer to output the results, omitting region dummies
+library(stargazer)
+stargazer(baseline_HC, type = "text", title = "OLS Baseline with Human capital", 
+          align = TRUE)
+```
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+resettest(baseline_HC, power = 2:3, type = "fitted")
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+# 1. Extract the summary coefficients table
+stats <- summary(baseline)$coefficients
+
+# 2. Pull the specific values for RoL
+mag   <- stats["RoL", "Estimate"]
+p_val <- stats["RoL", "Pr(>|t|)"]
+sign  <- ifelse(mag > 0, "+", "-")
+
+# 3. Print the results clearly
+cat("RoL without HC \n")
+cat("Magnitude:", round(mag, 4), "\n")
+cat("Sign:     ", sign, "\n")
+cat("p-value:  ", signif(p_val, 4), "\n \n")
+
+# 1. Extract the summary coefficients table
+stats_HC <- summary(baseline_HC)$coefficients
+
+# 2. Pull the specific values for RoL
+mag_HC   <- stats_HC["RoL", "Estimate"]
+p_val_HC <- stats_HC["RoL", "Pr(>|t|)"]
+sign_HC  <- ifelse(mag_HC > 0, "+", "-")
+
+# 3. Print the results clearly
+cat("RoL with HC \n")
+cat("Magnitude RoL:", round(mag_HC, 4)      , "     Magnitude HC", stats_HC["HC", "Estimate"] , "\n")
+cat("Sign RoL:     ", sign_HC               , "          Sign HC:       ", ifelse(stats_HC["HC", "Estimate"] > 0, "+", "-"), "\n")
+cat("p-value RoL:  ", signif(p_val_HC, 4)   , "   p-value HC:  ", signif(stats_HC["HC", "Pr(>|t|)"], 4), "\n")
+```
+The coefficient for RoL dropped significantly (from 0.8207 to 0.4277) when HC was added. This suggests a strong relationship between institutions and human capital. RoL is still highly significant and positive. RoL is robust to the addition of HC in the model. 
+
+HC as a Confounder: If we view HC as a confounder, it means HC affects both the quality of institutions and GDP. In this view, the baseline model was overestimating the effect of RoL because it was "soaking up" the effect of omitted human capital.
+HC as a Mediator: If we view HC as a mediator, it means good institutions (RoL) lead to better HC, which in turn leads to higher logY. In this case, the drop in the coefficient is expected because HC is the channel through which institutions work. By including it, we are measuring only the direct effect of RoL, ignoring its indirect effect via education. 
+
+Conclusion:
+The Baseline Model without Human Capital stands as the most appropriate specification. Econometrically, this choice is supported by the joint insignificance of the continent interaction terms (with an F-test p-value of 0.1209), these extra variables add unnecessary complexity without improving the model’s explanatory power. Furthermore, including Human Capital as a regressor introduces a "bad control" problem. Adding it to the model "soaks up" the influence of the Rule of Law, reducing its coefficient from 0.82 to 0.43 and obscuring the true magnitude of its impact.
+
+Economically, institutions are recognized as "deep determinants" of growth that precede and incentivize investments in education and physical capital. The Baseline Model captures the total effect of institutions, which includes both their direct influence on productivity and their indirect influence through the development of a skilled workforce. By contrast, the model with Human Capital only measures the narrow direct effect, which underrepresents the actual role of the Rule of Law in economic development. Additionally, Human Capital is often endogenous—where higher income levels lead to better education—which can introduce simultaneity bias. Therefore, the Baseline Model remains the most robust and theoretically sound representation of how institutional quality drives economic performance.
+
+## 4.7. Endogeneity and Instrumental Variables
+### Baseline model (without HC)
+RoL is stochastic and endogenous. D1, D2, D3, FoF, FoB and LAT are all stochastic and exogenous. If one or more regressor is endogenous OLS is biased, inconsistent and not efficient. 
+
+As instrumental variables we choose the Colonial Initial Conditions (log SM, log PD). These instrumental variables are valid when they are exogenous, relevant and excluded variables. Based on the diagram we assume that there is no potential feedback to Colonial Initial Conditions, making them exogenous (no correlation with the error term). The Colonial Initial Conditions are relevant since they are correlated with RoL. The exclusion restriction is fulfilled since they are not included in our baseline model.
+
+
+### 2SLS estimation
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+# First stage estimation
+first_stage=lm(RoL ~ logSM + logPD + LAT + D1 + D2 + D3 + FoF + FoB , data = data)
+summary(first_stage)
+
+library(car)
+linearHypothesis(first_stage, c("logSM = 0", "logPD = 0"))
+
+# Second stage estimation
+library(AER)
+twosls=ivreg(logY ~ RoL + LAT + D1 + D2 + D3 + FoF + FoB | logSM + logPD + LAT + D1 + D2 + D3 + FoF + FoB, data = data)
+summary(twosls, diagnostics=TRUE)
+
+stargazer(baseline, twosls,
+          type = "text",
+          title = "Baseline OLS vs 2SLS Estimates",
+          column.labels = c("OLS", "2SLS"),
+          align = TRUE,
+          keep.stat = c("n", "rsq", "adj.rsq", "f"),
+          no.space = TRUE)
+```
+
+Based on the diagnostic test we observe an F statistic of 9.5947. This is below the Rule of Thumb of 10 which indicates a weak instrument.
+
+
+### Testing for Endogeneity
+```{r}
+res_first=first_stage$residuals
+
+haus=lm(logY ~ RoL + LAT + D1 + D2 + D3 + FoF + FoB + res_first, data=data)
+summary (haus)
+```
+
+res_first is significant on the 5% level. The endogenous component of RoL has genuine explanatory power once added to the equation. The residual is endogenous such that OLS is inconsistent and 2SLS is preferred.
+
+### Conceptual question
+
+Bias occurs when there is model misspecification or endogeneity. Based on our formal tests, we detected no model misspecification. Instrumenting RoL should eliminate therefore eliminate any bias left. However, since our instruments are weak, the endogeneity in RoL might not be sufficiently accounted for and there might still be bias.
+Since the instruments are weak, 2SLS estimates are biased toward OLS, inheriting the endogeneity bias we were trying to eliminate.
+The reported standard errors are downward biased, they ignore first-stage uncertainty.
+
+Omitting HC in the IV model does not create omitted variable bias if HC is correctly viewed as a mediator.
+
+### Extended model (including HC)
+
+```{r}
+extended <- lm(logY ~ RoL + LAT + D1 + D2 + D3 + FoF + FoB + HC, data = data)
+summary(extended)
+```
+
+HC should be treated as potentially endogenous. We can derive this from the theoretical diagram. If it actually is endogenous, we would instrument it using the Primary school enrollment variable (PSE) and the share of Protestant missionaries (PM). 
+
+### 2SLS estimation
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+# First stage estimation
+first_stage_RoL=lm(RoL ~ logSM + logPD + LAT + D1 + D2 + D3 + FoF + FoB + PSE + PM , data = data)
+first_stage_HC = lm(HC ~ logSM + logPD + LAT + D1 + D2 + D3 + FoF + FoB + PSE + PM, data = data)
+
+summary(first_stage_RoL)
+summary(first_stage_HC)
+
+library(car)
+linearHypothesis(first_stage_RoL, c("logSM = 0", "logPD = 0"))
+linearHypothesis(first_stage_HC, c("PSE = 0", "PM = 0"))
+
+# Second stage estimation
+library(AER)
+twosls_extended=ivreg(logY ~ RoL + HC + LAT + D1 + D2 + D3 + FoF + FoB + PSE + PM | logSM + logPD + LAT + D1 + D2 + D3 + FoF + FoB + PSE + PM, data = data)
+summary(twosls, diagnostics=TRUE)
+
+stargazer(extended, twosls_extended,
+          type = "text",
+          title = "Extended OLS vs 2SLS Estimates",
+          column.labels = c("OLS", "2SLS"),
+          align = TRUE,
+          keep.stat = c("n", "rsq", "adj.rsq", "f"),
+          no.space = TRUE)
+```
+
+To evaluate the weakness of the instrumental variables, we used the pragmatic approach by testing the specific instruments for each endogenous regressor, in the relevant first-stage equation. The F test was below 10 for both the equations, indicating weak instruments.
+
+### Testing for Endogeneity
+```{r}
+res_first_RoL=first_stage_RoL$residuals
+res_first_HC=first_stage_HC$residuals
+
+haus_extended=lm(logY ~ RoL + HC + LAT + D1 + D2 + D3 + FoF + FoB + res_first_RoL + res_first_HC, data=data)
+linearHypothesis(haus_extended, c("res_first_RoL = 0", "res_first_HC = 0"))
+
+summary (haus_extended)
+```
+
+The Hausman tests show no evidence of possible endogeneity. The joint F test and the individual t-tests of the residuals as regressors are insignificant, meaning we cannot reject the H0 hypothesis of exogeneity. 
+
+### Conceptual questions
+
+Including HC drops RoL coefficient (and thus effect) from 0.82 to 0.43. RoL still has a significant, positive effect, but smaller in magnitude. This indicates that the effect measured in the extended model is the direct effect of RoL, rather than the indirect effect measured in the baseline model.The exclusions restriction in step 1 states that the included IVs (Log SM, log PD) should only effect logY through RoL. When HC is included this is not longer the case, another channel is created, namely: Colonial Initial Conditions -> Early Human Capital Formation -> Human capital -> Income 
+This means that the exclusions restriction on these IVs do no longer hold when used in the extended version. Making them incorrect IVs to use and invalidating the results gained from the final test (i.e. the results showing that RoL is no longer endogenous).
+
+# STEP 5 - General remediation and conclusion
+
+- standard error terms zijn normally distributed
+- multicollinearity: geen VIF boven 10, maar wel hoge waarden. No action
+- heteroskedasticity: aanwezig (regions of colony?) --> adress met EGLS (cold ofni?)
+- 
