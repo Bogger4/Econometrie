@@ -25,7 +25,6 @@ Our baseline model is as follows:")
 
 $$\text{logY}_i = \beta_0 + \beta_1 \text{RoL}_i + \beta_2 \text{LAT}_i + \beta_3 D_{1i} + \beta_4 D_{2i} + \beta_5 D_{3i} + \beta_6 \text{FoB}_i + \beta_7 \text{FoF}_i + \mu_i$$
 
-\textcolor{red}{Are we allowed to include our baseline model in our R output?}
 
 ```{r echo=FALSE, results='asis'}
   cat("Our assumptions are:\n
@@ -248,10 +247,10 @@ The control variables are jointly significant. At least one of the control varia
 
 ## 4.1. Nature of the regressors
 
-Our dummy variables: D1, D2, D3, FoF and FoB are considered deterministic due to the fact that their values are limited to either 0 and 1 over repeated samples.\newline
-LAT is a fixed coordinate, nothing can change that. This means LAT is deterministic.\newline
+
+Given that over repeated sampling, different countries can be observed, the values of D1, D2, D3, FoF, FoB and LAT are all stochastic. Furthermore, all of these have an effect on Human Capital, which is a mediator variable not included in the model and is therefore in the error term. This ultimately means that the aforementioned control variables are correlated with the error terms, and thus endogeneous.\newline
 RoL is stochastic and endogenous. It almost certainly correlates with the error term. This is because log GDP per capita affects RoL (see dashed line in causal diagram).\newline
-This implies that OLS becomes biased and inconsistent which means that the coefficient does not measure the true causal effect.
+This implies that OLS becomes biased and inconsistent which means that the coefficients do not measure the true causal effect.
 Remediation is required. This will be covered in step 4(g).
 
 ## 4.2. Distribution of Error Terms
@@ -295,3 +294,511 @@ vif(baseline)
 We see that we get high values for D1 and D3. We think this is because there are barely any countries that belong to the fourth category (D1 = 0, D2 = 0, D3 = 0). If we give each category a dummy variable, we get perfect multicollinearity. This situation doesn't differ much from the situation of perfect multicollinearity. This is why we think D1 and D3 have such high VIF's.\newline
 Multicollinnearity is not a theoretical issue. It does not affect unbiasedness or consistency and remains the most efficient estimator. However, a high degree of multicollinearity can lead to larger variances of the estimators and thus wider confidence intervals and lower t-statistics. This decreases the power of inferential tests. Multicollinearity only leads to practical problems.\newline
 Action should not be taken because multicollinearity mostly reflects a lack of information in the data.
+
+\newpage
+
+## 4.4 Heteroskedasticity
+### Graphical detection of heteroskedasticity
+#### Plot of Squared Residuals vs. Fitted Values
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, fig.width=6, fig.height=4, fig.align='center'}
+y_hat = baseline$fitted.values
+
+res_sq <- residuals(baseline)^2
+
+ggplot(data.frame(y_hat, res_sq), aes(x = y_hat, y = res_sq)) +
+  geom_point(colour = "yellow", size = 1) +  # Points
+  geom_smooth(method = "loess", se = FALSE, colour = "#FF2F92") +  # Trend line
+  labs(
+    title = "Squared Residuals vs. Fitted Values",
+    x = "Fitted Values (log Y)",
+    y = "Squared Residuals"
+  ) +
+  theme_minimal(base_size = 12) +
+  theme(
+    plot.background = element_rect(fill = "grey90", colour = NA),   # Outer box
+    panel.background = element_rect(fill = "purple", colour = NA),  # Plot area
+    panel.grid.major = element_line(colour = "white"),              # Grid lines
+    panel.grid.minor = element_blank()
+  )
+```
+
+#### Plot of Squared Residuals vs. RoL
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, fig.width=6, fig.height=4, fig.align='center'}
+attach(data)
+
+ggplot(data.frame(RoL, res_sq), aes(x = RoL, y = res_sq)) +
+  geom_point(colour = "yellow", size = 1) +  # Points
+  geom_smooth(method = "loess", se = FALSE, colour = "#FF2F92") +  # Trend line
+  labs(
+    title = "Squared Residuals vs. RoL",
+    x = "RoL",
+    y = "Squared Residuals"
+  ) +
+  theme_minimal(base_size = 12) +
+  theme(
+    plot.background = element_rect(fill = "grey90", colour = NA),   # Outer box
+    panel.background = element_rect(fill = "purple", colour = NA),  # Plot area
+    panel.grid.major = element_line(colour = "white"),              # Grid lines
+    panel.grid.minor = element_blank()
+  )
+```
+
+#### Plot of Squared Residuals vs. LAT
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, fig.width=6, fig.height=4, fig.align='center'}
+attach(data)
+
+ggplot(data.frame(LAT, res_sq), aes(x = LAT, y = res_sq)) +
+  geom_point(colour = "yellow", size = 1) +  # Points
+  geom_smooth(method = "loess", se = FALSE, colour = "#FF2F92") +  # Trend line
+  labs(
+    title = "Squared Residuals vs. LAT",
+    x = "LAT",
+    y = "Squared Residuals"
+  ) +
+  theme_minimal(base_size = 12) +
+  theme(
+    plot.background = element_rect(fill = "grey90", colour = NA),   # Outer box
+    panel.background = element_rect(fill = "purple", colour = NA),  # Plot area
+    panel.grid.major = element_line(colour = "white"),              # Grid lines
+    panel.grid.minor = element_blank()
+  )
+```
+
+### Plot of Squared Residuals vs. Regions
+
+```{r echo= FALSE, warning=FALSE, message=FALSE}
+data <- data %>%
+  mutate(Regions = case_when(
+    D3 == 1 ~ 3,
+    D2 == 1 ~ 2,
+    D1 == 1 ~ 1,
+    TRUE    ~ 0 
+  ))
+```
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, fig.width=6, fig.height=4, fig.align='center'}
+attach(data)
+
+ggplot(data.frame(Regions, res_sq), aes(x = Regions, y = res_sq)) +
+  geom_point(colour = "yellow", size = 1) +  # Points
+  geom_smooth(method = "loess", se = FALSE, colour = "#FF2F92") +  # Trend line
+  labs(
+    title = "Squared Residuals vs. Regions",
+    x = "Regions",
+    y = "Squared Residuals"
+  ) +
+  theme_minimal(base_size = 12) +
+  theme(
+    plot.background = element_rect(fill = "grey90", colour = NA),   # Outer box
+    panel.background = element_rect(fill = "purple", colour = NA),  # Plot area
+    panel.grid.major = element_line(colour = "white"),              # Grid lines
+    panel.grid.minor = element_blank()
+  )
+```
+
+On first sight, we notice a decrease in the spread of the residuals in the plots. For Africa (D1) we saw a slight increase contrary to the other regions. To conclude wether there is heteroskedadasticity, further testing is required. 
+
+### Formal tests for heteroskedasticity
+
+### Goldfeld-Quandt Test
+
+Two-sided Goldfeld-Quandt test (hereinafter GQ1; no specified direction of variance change):
+$$
+H_0: \sigma_1^2 = \sigma_2^2 \quad \text{vs.} \quad H_1: \sigma_1^2 \neq \sigma_2^2
+$$
+One-sided GQ test for increasing variance (hereinafter GQ2):
+$$
+H_0: \sigma_2^2 \leq \sigma_1^2   \quad \text{vs.} \quad H_1: \sigma_2^2 > \sigma_1^2
+$$
+One-sided GQ test for decreasing variance (hereinafter GQ3):
+$$
+H_0: \sigma_2^2 \ge \sigma_1^2 \quad \text{vs.} \quad H_1: \sigma_2^2 < \sigma_1^2
+$$
+
+##### Goldfeld-Quandt Test by RoL
+
+```{r warning=FALSE, message=FALSE, echo=FALSE}
+library(lmtest)
+
+GQ1_RoL=gqtest(baseline, fraction = 10, order.by = RoL, alternative = "two.sided")
+GQ1_RoL
+
+GQ2_RoL=gqtest(baseline, fraction = 10, order.by = RoL)
+GQ2_RoL
+
+GQ3_RoL=gqtest(baseline, fraction = 10, order.by = -RoL) # for decreasing variance
+GQ3_RoL
+```
+Given that we saw a decreasing trend in variance, the third test is most relevant in our case. The p-value shows that we cannot reject the hypothesis of homoskedasticity. We assume that the residuals are normally distributed in order to perform this test. As shown in 4.2. this is the case.
+
+#### White’s General Heteroskedasticity Test
+```{r warning=FALSE, echo=FALSE}
+# Auxiliary regression for White test (excluding interactions)
+aux_model <- lm(res_sq ~ RoL + LAT + D1 + D2 + D3 + FoF + FoB + I(RoL^2) + I(LAT^2),
+                data = data)
+
+stargazer(aux_model, type="text")
+
+# White's test statistic 
+n <- nrow(data)
+R2_aux <- summary(aux_model)$r.squared
+white_stat <- n * R2_aux
+df_white <- length(coef(aux_model)) - 1
+p_value_white <- pchisq(white_stat, df_white, lower.tail = FALSE)
+
+# Summary test result table 
+data.frame(
+  Statistic = c("Test Statistic", "Degrees of Freedom", "p-value"),
+  Value = c(round(white_stat, 4), df_white, formatC(p_value_white, format = "e", digits = 4))
+) |> knitr::kable(caption = "White's Heteroskedasticity Test Results")
+
+summary(aux_model)$r.squared
+```
+The stargazer shows us that none of the coefficients are significant in the auxiliary regression. This leads us to believe that the error variance does not depend on the regressors. We dropped the interaction variables because of our small sample size. Including the interaction terms would reduce the degrees of freedom too much. This is important because the null hypothesis assumes an infinitely large sample size.
+
+#### Brown-Forsythe Test by REGION
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+# Group medians of residuals
+attach(data)
+med_resid_region <- tapply(residuals_baseline, Regions, median, na.rm = TRUE)
+
+# Absolute deviations from group medians
+z_region <- abs(residuals_baseline - med_resid_region[as.character(Regions)])
+
+# One-way ANOVA on deviations
+BF_region <- lm(z_region ~ Regions)
+
+# Test H0 of equal variances across continents
+anova_tab9 <- anova(BF_region)
+F_stat3 <- anova_tab9["Regions", "F value"]
+p_val3  <- anova_tab9["Regions", "Pr(>F)"]
+df1_3   <- anova_tab9["Regions", "Df"]              # = G-1 = 3
+df2_3   <- anova_tab9["Residuals", "Df"]           # = n-G = n-4
+
+cat("Brown–Forsythe test (3 groups by region):\n")
+cat("F =", round(F_stat3, 4), " df1 =", df1_3, " df2 =", df2_3,
+    " p-value =", signif(p_val3, 4), "\n")
+
+# Show group means of |deviations| for interpretation
+tapply(z_region, Regions, mean, na.rm = TRUE)
+```
+
+#### Brown-Forsythe Test by COLONY
+```{r echo=FALSE}
+data <- data %>%
+  mutate(Colony = case_when(
+    FoF == 1 ~ 2,
+    FoB == 1 ~ 1,
+    TRUE    ~ 0 
+  ))
+```
+
+```{r echo=FALSE}
+# Group medians of residuals
+attach(data)
+med_resid_colony <- tapply(residuals_baseline, Colony, median, na.rm = TRUE)
+
+# Absolute deviations from group medians
+z_colony <- abs(residuals_baseline - med_resid_colony[as.character(Colony)])
+
+# One-way ANOVA on deviations
+BF_colony <- lm(z_colony ~ Colony)
+
+# Test H0 of equal variances across continents
+anova_tab4 <- anova(BF_colony)
+F_stat4 <- anova_tab4["Colony", "F value"]
+p_val4  <- anova_tab4["Colony", "Pr(>F)"]
+df1_4   <- anova_tab4["Colony", "Df"]              # = G-1 = 3
+df2_4   <- anova_tab4["Residuals", "Df"]           # = n-G = n-4
+
+cat("Brown–Forsythe test (3 groups by colony):\n")
+cat("F =", round(F_stat4, 4), " df1 =", df1_4, " df2 =", df2_4,
+    " p-value =", signif(p_val4, 3), "\n")
+
+# Show group means of |deviations| for interpretation
+tapply(z_colony, Colony, mean, na.rm = TRUE)
+```
+Based on these tests we cannot reject the null hypothesis of homoskedasticity. Given that this is an F-test, the same remark as before about our sample size holds.
+
+### Theoretical implications
+
+Under heteroskedasticity OLS remains unbiased (and consistent), but becomes inefficient to GLS. Inference becomes invalid, because the variance formula used in OLS is no longer correct and needs to be adjusted.
+
+### Addressing "pure" heteroskedasticity
+Disclaimer: heteroskedasticity was not a problem. 
+
+#### White correction: Heteroskedasticity-robust standard errors
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+library(sandwich)
+baseline_White = baseline
+White_se=sqrt(diag(vcovHC(baseline_White)))
+stargazer(baseline, baseline_White,
+          type = "text",
+          style = "all",
+          se = list(NULL, White_se),
+          column.labels = c("Baseline", "White SE"))
+```
+
+#### EGLS (Feasible GLS) estimator
+```{r echo=FALSE, warning=FALSE}
+library(modelsummary)
+library(sandwich)
+library(broom)
+
+# 1. Extract the fitted values
+y_hat <- fitted.values(baseline)
+
+# 2. Define weights: if variance ~ 1/y_hat, then weight = y_hat
+w_final <- y_hat
+
+# 3. Run the WLS model
+EGLS_RoL <- lm(logY ~ RoL + LAT + D1 + D2 + D3 + FoB + FoF, 
+                 data = data, 
+                 weights = w_final)
+
+# 5) Show results
+stargazer(baseline, EGLS_RoL,
+          type = "text",
+          style = "all",
+          column.labels = c("Baseline", "EGLS by RoL"))
+
+```
+We see that the variance structure is decreasing with an increasing logY. So we assume that the error variance is proportional to 1/logY. We multiplied each value with the square root of its fitted value. This way higher fitted values get a higher weight because they have a lower variance.
+We see that with the EGLS model the R squared drops and the standards errors of the estimators dramatically increase. This may indicate that the given transformation was not relevant.
+
+### Theoretically comparing OLS to EGLS
+
+The efficiency and consistency of EGLS depends on the correctness of the assumed heteroskedasticity pattern. EGLS standard errors are not necessarily lower than OLS standard errors as OLS incorrectly assumes homoskedasticity. In the case of heteroskedasticity, EGLS is consistent and asymptotically efficient.
+
+## 4.5. Autocorrelation
+
+### Graphical inspection of Autocorrelation
+```{r echo=FALSE}
+# Create dataframe with residuals and RoL
+res_RoL_df <- data.frame(RoL = RoL, Residuals = residuals(baseline))
+
+# Order by RoL
+res_RoL_df <- res_RoL_df[order(res_RoL_df$RoL), ]
+res_RoL_df$Index <- 1:nrow(res_RoL_df)
+
+# Plot
+ggplot(res_RoL_df, aes(x = Index, y = Residuals)) +
+  geom_point(colour = "yellow", size = 1) +  # Points
+  geom_smooth(method = "loess", se = FALSE, colour = "#FF2F92") +  # Trend line
+  labs(
+    title = "Residuals vs. Observation Index (Ordered by RoL)",
+    x = "Ordered Index by RoL",
+    y = "Residuals"
+  ) +
+  theme_minimal(base_size = 12) +
+  theme(
+    plot.background = element_rect(fill = "grey90", colour = NA),   # Outer box
+    panel.background = element_rect(fill = "purple", colour = NA),  # Plot area
+    panel.grid.major = element_line(colour = "white"),              # Grid lines
+    panel.grid.minor = element_blank()
+  )
+
+```
+Based on this graph, it is difficult to see if there is some sort of negative correlation or no autocorrelation at all. This needs to be formally tested.
+
+### Formal autocorrelation tests 
+
+### Runs test
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+# Order data by EDUC
+ordered_data <- data[order(data$RoL), ]
+res_OR <- residuals(lm(logY ~ RoL + LAT + D1 + D2 + D3 + FoF + FoB, data = ordered_data))
+
+# Create sign vector (+1 for positive, -1 for negative residuals)
+signs <- ifelse(res_OR >= 0, 1, -1)
+
+# Count runs
+runs_count <- function(signs) {
+  r <- 1
+  for (i in 2:length(signs)) {
+    if (signs[i] != signs[i - 1]) {
+      r <- r + 1
+    }
+  }
+  return(r)
+}
+
+R <- runs_count(signs)
+N1 <- sum(signs == 1)
+N2 <- sum(signs == -1)
+N <- N1 + N2
+E_R <- 2 * N1 * N2 / N + 1
+s_R <- sqrt(2 * N1 * N2 * (2 * N1 * N2 - N) / (N^2 * (N - 1)))
+
+results_R <- c(R, E_R, E_R - 1.96 * s_R, E_R + 1.96 * s_R)
+names(results_R) <- c("Observed Runs", "Expected Runs", "95% Lower Bound", "95% Upper Bound")
+results_R
+
+# Comparison using runs.test:
+library(tseries)
+sign_residuals <- factor(signs)
+runs_result <- runs.test(sign_residuals)
+runs_result
+```
+
+#### Durbin-Watson d-statistic
+```{r echo=FALSE}
+baseline_OR = lm(logY ~ RoL + LAT + D1 + D2 + D3 + FoB + FoF, data = ordered_data)
+
+library(lmtest)
+dwtest(baseline_OR)
+```
+
+#### Breusch-Godfrey LM test
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+bgtest(baseline_OR, order = 1)
+```
+
+These tests conclude that there is not autocorrelation.
+
+### Specific assumption of the previous test
+
+### Runs test
+
+The runs test has no major assumptions, as it is non-parametric and thus does not have any functional form related to it.
+
+### Durbin-Watson d-test
+
+This test assumes non-stachastic estimators, which is not the case. Nevertheless, there are usually no big implication.
+Furthermore, the error terms should follow a AR(1) process. If this not true, like in this case, its power to detect autocorrelation decreases.
+Thridly, the error terms should be normally distributed, which is the case.
+
+The most critical assumptions for the Durbin-Watson test is that the regression model does not include lagged dependent variables.
+
+### Breusch-Godfrey LM test
+
+The Breusch-Godfrey LM test assumes that the data follows an AR(p) pattern. It is less powerful in small samples.
+
+### Interpretation and remediation
+
+If autocorrelation would be present in cross-sectional data, this would typically implicate modelmisspecification.
+Under autocorrelation, OLS estimators remain unbiased and normally distributed, but the standard variance formula is incorrect. This leads to biased standard errors and unreliable inference. In addition, OLS is no longer efficient, as GLS provides estimators with lower variance.
+In case remediation is necessary, the more efficient (E)GLS model can remove autocorrelation, or in case of non-stationary data, first-differencing can be considered. In order to keep using OLS, the formula for the standard errors would have to be corrected using the Newey-West correction. However, as our sample size is quite small, doing nothing might be reasonable. Autocorrelation could also be a signal of misspecification, which we will discuss in the next part.
+
+## 4.6. Model Specification
+
+### Alternative specifications
+#### Extend the model by allowing the effect of RoL to differ across continents
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+# Log-linear transformation of the baseline
+
+baseline_inter_RoL <- lm(logY ~ RoL + LAT + D1 + D2 + D3 + FoF + FoB + RoL*D1 + RoL*D2 + RoL*D3 , data = data)
+
+# Stargazer output
+library(stargazer)
+stargazer(baseline, baseline_inter_RoL,
+          type = "text",
+          title = "Baseline with RoL across continents",
+          column.labels = c("Level", "Log-Level"),
+          align = TRUE,
+          no.space = TRUE)
+```
+
+```{r echo=FALSE}
+resettest(baseline_inter_RoL, power = 2:3, type = "fitted")
+```
+
+```{r warning=FALSE, message=FALSE}
+f_test_inter_RoL <- linearHypothesis(baseline_inter_RoL, 
+                                  c("RoL:D1 = 0", "RoL:D2 = 0", "RoL:D3 = 0"))
+f_test_inter_RoL
+```
+
+Since the p-value (0.1209) is greater than 0.05, we fail to reject the null hypothesis. The interaction terms are not jointly significant. This suggests that the impact of the Rule of Law on logY does not statistically differ significantly across the different regions defined by D1,D2, and D3.
+
+#### Extend the specification by including human capital
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+# Fit the model with higher-order EDUC
+baseline_HC <- lm(logY ~ RoL + LAT + D1 + D2 + D3 + FoF + FoB + HC, data = data)
+
+# Use stargazer to output the results, omitting region dummies
+library(stargazer)
+stargazer(baseline_HC, type = "text", title = "OLS Baseline with Human capital", 
+          align = TRUE)
+```
+```{r echo=FALSE}
+resettest(baseline_HC, power = 2:3, type = "fitted")
+```
+
+```{r echo=FALSE}
+# 1. Extract the summary coefficients table
+stats <- summary(baseline)$coefficients
+
+# 2. Pull the specific values for RoL
+mag   <- stats["RoL", "Estimate"]
+p_val <- stats["RoL", "Pr(>|t|)"]
+sign  <- ifelse(mag > 0, "+", "-")
+
+# 3. Print the results clearly
+cat("RoL without HC \n")
+cat("Magnitude:", round(mag, 4), "\n")
+cat("Sign:     ", sign, "\n")
+cat("p-value:  ", signif(p_val, 4), "\n \n")
+
+# 1. Extract the summary coefficients table
+stats_HC <- summary(baseline_HC)$coefficients
+
+# 2. Pull the specific values for RoL
+mag_HC   <- stats_HC["RoL", "Estimate"]
+p_val_HC <- stats_HC["RoL", "Pr(>|t|)"]
+sign_HC  <- ifelse(mag_HC > 0, "+", "-")
+
+# 3. Print the results clearly
+cat("RoL with HC \n")
+cat("Magnitude RoL:", round(mag_HC, 4)      , "     Magnitude HC", stats_HC["HC", "Estimate"] , "\n")
+cat("Sign RoL:     ", sign_HC               , "          Sign HC:       ", ifelse(stats_HC["HC", "Estimate"] > 0, "+", "-"), "\n")
+cat("p-value RoL:  ", signif(p_val_HC, 4)   , "   p-value HC:  ", signif(stats_HC["HC", "Pr(>|t|)"], 4), "\n")
+```
+The coefficient for RoL dropped significantly (from 0.8207 to 0.4277) when HC was added. This suggests a strong relationship between institutions and human capital.
+
+HC as a Confounder: If we view HC as a confounder, it means HC affects both the quality of institutions and GDP. In this view, the baseline model was overestimating the effect of RoL because it was "soaking up" the effect of omitted human capital.
+HC as a Mediator: If we view HC as a mediator, it means good institutions (RoL) lead to better HC, which in turn leads to higher logY. In this case, the drop in the coefficient is expected because HC is the channel through which institutions work. By including it, we are measuring only the direct effect of RoL, ignoring its indirect effect via education. 
+
+Conclusion:
+The Baseline Model without Human Capital stands as the most appropriate specification. Econometrically, this choice is supported by the joint insignificance of the continent interaction terms (with an F-test p-value of 0.1209), these extra variables add unnecessary complexity without improving the model’s explanatory power. Furthermore, including Human Capital as a regressor introduces a "bad control" problem. Adding it to the model "soaks up" the influence of the Rule of Law, reducing its coefficient from 0.82 to 0.43 and obscuring the true magnitude of its impact.
+
+Economically, institutions are recognized as "deep determinants" of growth that precede and incentivize investments in education and physical capital. The Baseline Model captures the total effect of institutions, which includes both their direct influence on productivity and their indirect influence through the development of a skilled workforce. By contrast, the model with Human Capital only measures the narrow direct effect, which underrepresents the actual role of the Rule of Law in economic development. Additionally, Human Capital is often endogenous—where higher income levels lead to better education—which can introduce simultaneity bias. Therefore, the Baseline Model remains the most robust and theoretically sound representation of how institutional quality drives economic performance.
+
+
+## 4.7. Endogeneity
+### 2SLS estimation
+```{r}
+
+# First stage estimation
+first_stage=lm(logY ~ logSM + logPD + RoL + LAT + D1 + D2 + D3 + FoB + FoF, data = data)
+summary(first_stage)
+
+library(car)
+linearHypothesis(first_stage, matchCoefs(first_stage, "logSM"))
+
+# Second stage estimation
+library(AER)
+twosls=ivreg(WAGE ~ EDUC + AGE + RACE + MARRIED + URBAN + REGION_factor | QOB_factor + AGE + RACE + MARRIED + URBAN + REGION_factor, data = data)
+summary (twosls, diagnostics=TRUE) #NIET MEER SIGNIFICANT --> WIJST OP WEAK INSTRUMENT | F is below 10 (fail on relevance condition)
+
+stargazer(baseline, twosls,
+          type = "text",
+          title = "Baseline OLS vs 2SLS Estimates",
+          column.labels = c("OLS", "2SLS"),
+          align = TRUE,
+          keep.stat = c("n", "rsq", "adj.rsq", "f"),
+          no.space = TRUE)
+```
+
+### Testing for Endogeneity
+```{r}
+res_first=first_stage$residuals
+
+haus=lm(WAGE ~ EDUC + AGE + RACE + MARRIED + URBAN + REGION_factor + res_first, data=data)
+summary (haus)
+```
