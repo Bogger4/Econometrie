@@ -870,7 +870,7 @@ library(stargazer)
 stargazer(baseline, baseline_inter_RoL,
           type = "text",
           title = "Baseline with RoL across continents",
-          column.labels = c("Level", "Log-Level"),
+          column.labels = c("Level", "Level-Level"),
           align = TRUE,
           no.space = TRUE)
 ```
@@ -1046,8 +1046,8 @@ linearHypothesis(first_stage_HC, c("PSE = 0", "PM = 0"))
 
 # Second stage estimation
 library(AER)
-twosls_extended=ivreg(logY ~ RoL + HC + LAT + D1 + D2 + D3 + FoF + FoB + PSE + PM | logSM + logPD + LAT + D1 + D2 + D3 + FoF + FoB + PSE + PM, data = data)
-summary(twosls, diagnostics=TRUE)
+twosls_extended=ivreg(logY ~ RoL + HC + LAT + D1 + D2 + D3 + FoF + FoB | logSM + logPD + PSE + PM + LAT + D1 + D2 + D3 + FoF + FoB, data = data)
+summary(twosls_extended, diagnostics=TRUE)
 
 stargazer(extended, twosls_extended,
           type = "text",
