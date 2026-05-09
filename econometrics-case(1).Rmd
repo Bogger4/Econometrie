@@ -19,35 +19,41 @@ Latitude, continent dummies, and colonial origin are included as controls since 
 
 We decide to exclude Human Capital, as we believe it is a mediator. When you control for a mediator, you block the indirect causal channel and only estimate the direct effect. By excluding it we can estimate the total effect (direct + indirect) of RoL on income.
 
-Our baseline model is as follows:")
+Our baseline model is as follows:
+
+$$\\text{logY}_i = \\beta_0 + \\beta_1 \\text{RoL}_i + \\beta_2 \\text{LAT}_i + \\beta_3 D_{1i} + \\beta_4 D_{2i} + \\beta_5 D_{3i} + \\beta_6 \\text{FoB}_i + \\beta_7 \\text{FoF}_i + \\mu_i$$")
 }
 ```
 
-$$\text{logY}_i = \beta_0 + \beta_1 \text{RoL}_i + \beta_2 \text{LAT}_i + \beta_3 D_{1i} + \beta_4 D_{2i} + \beta_5 D_{3i} + \beta_6 \text{FoB}_i + \beta_7 \text{FoF}_i + \mu_i$$
-
 
 ```{r echo=FALSE, results='asis'}
+if (show_interpretation) {
   cat("Our assumptions are:\n
       - We know and have included all the confounders (no omitted variables)\n
       - No reverse causality\n
       - Human capital is a mediator and is not included\n
       ")
+}
 ```
 
-## Hypotheses
 
-\begin{table}[h]
-\centering
-\renewcommand{\arraystretch}{1.5} % Adds vertical padding for readability
-\begin{tabular}{|p{2.5cm}|c|p{4cm}|l|p{3.5cm}|}
-\hline
-\textbf{Variable} & \textbf{Direction} & \textbf{Rationale} & \textbf{One/two-sided} & \textbf{$H_0, H_1$} \\ \hline
-RoL & + & Better institutions lead to more income & One-sided & $H_0: \beta_1 \le 0$ \newline $H_1: \beta_1 > 0$ \\ \hline
-LAT (latitude) & ? & Differences in geographical conditions & Two-sided & $H_0: \beta_2 = 0$ \newline $H_1: \beta_2 \neq 0$ \\ \hline
-D1/D2/D3 (continent) & ? & Differences in regional conditions & Two-sided & $H_0: \beta_3, \beta_4, \beta_5 = 0$ \newline $H_1: \text{At least one} \neq 0$ \\ \hline
-FoF, FoB (colonizer) & ? & Differences in former colonizer & Two-sided & $H_0: \beta_6, \beta_7 = 0$ \newline $H_1: \text{At least one} \neq 0$ \\ \hline
-\end{tabular}
-\end{table}
+```{r echo=FALSE, results='asis'}
+if (show_interpretation) {
+  cat("\n\n## Hypotheses\n\n",
+      "\\begin{table}[h]
+      \\centering
+      \\renewcommand{\\arraystretch}{1.5}
+      \\begin{tabular}{|p{2.5cm}|c|p{4cm}|l|p{3.5cm}|}
+      \\hline
+      \\textbf{Variable} & \\textbf{Direction} & \\textbf{Rationale} & \\textbf{One/two-sided} & \\textbf{$H_0, H_1$} \\\\ \\hline
+      RoL & + & Better institutions lead to more income & One-sided & $H_0: \\beta_1 \\le 0$ \\newline $H_1: \\beta_1 > 0$ \\\\ \\hline
+      LAT (latitude) & ? & Differences in geographical conditions & Two-sided & $H_0: \\beta_2 = 0$ \\newline $H_1: \\beta_2 \\neq 0$ \\\\ \\hline
+      D1/D2/D3 (continent) & ? & Differences in regional conditions & Two-sided & $H_0: \\beta_3, \\beta_4, \\beta_5 = 0$ \\newline $H_1: \\text{At least one} \\neq 0$ \\\\ \\hline
+      FoF, FoB (colonizer) & ? & Differences in former colonizer & Two-sided & $H_0: \\beta_6, \\beta_7 = 0$ \\newline $H_1: \\text{At least one} \\neq 0$ \\\\ \\hline
+      \\end{tabular}
+      \\end{table}")
+}
+```
 
 # STEP 2 - Load and Explore the Data
 ```{r}
@@ -202,18 +208,28 @@ stargazer(data = baseline, type = "text", title = "OLS baseline")
 ```
 
 ## 3.2. Interpret the estimated coefficients
+```{r echo=FALSE, results='asis'}
+if (show_interpretation) {
+  cat("To test the significance of the coefficient of RoL we perform a one sided test. Our t-statistic is as follows:
 
-To test the significance of the coefficient of RoL we perform a one sided test. Our t-statistic is as follows:
+$$t = \\frac{0.821-0}{0.158} = 5.196$$
+$$Critical\\ value = t_{0.001; 54} = 3.232$$
+$$5.196 > 3.232 \\to We \\ reject \\ on \\ the \\ 0.1\\% \\ significance \\ level$$
+      ")
+}
+``` 
 
-$$t = \frac{0.821-0}{0.158} = 5.196$$
-$$Critical\ value = t_{0.001; 54} = 3.232$$
-$$5.196 > 3.232 \to We \ reject \ on \ the \ 0.1\% \ significance \ level$$
+```{r echo=FALSE, results='asis'}
+if (show_interpretation) {
+  cat("RoL: coefficient is significant on the 1% significance level. A one unit increase of RoL leads to a 127.28% increase in GDP per capita, ceteris paribus. This is consistent with the institutional hypothesis.
 
-RoL: coefficient is significant on the 1% significance level. A one unit increase of RoL leads to a 127.28% increase in GDP per capita, ceteris paribus. This is consistent with the institutional hypothesis.\newline
-
-The controls are not significant on the 5% significance level. Since they are all two-sided tests, the t-statistics and p-values are calculated by the lm-function.\newline
+The controls are not significant on the 5% significance level. Since they are all two-sided tests, the t-statistics and p-values are calculated by the lm-function.
 
 Our regressors explain the variation in log GDP per capita for 65.5%. The included regressors are jointly significant on the 1% significance level. 
+")
+}
+```
+
 
 ## 3.3 F-tests
 
@@ -224,7 +240,12 @@ f_test_region <- linearHypothesis(baseline,
 f_test_region
 ```
 
-The continent dummies are jointly significant on the 1% significance level. At least one of the continent dummies has explanatory power.
+```{r echo=FALSE, results='asis'}
+if (show_interpretation) {
+  cat("The continent dummies are jointly significant on the 1% significance level. At least one of the continent dummies has explanatory power.
+")
+}
+```
 
 
 ```{r warning=FALSE, message=FALSE}
@@ -233,7 +254,12 @@ f_test_colonizer <- linearHypothesis(baseline,
 f_test_colonizer
 ```
 
-The former colonizer dummies are not jointly significant on the 5% significance level. None of the former colonizer dummies have explanatory power.
+```{r echo=FALSE, results='asis'}
+if (show_interpretation) {
+  cat("The former colonizer dummies are not jointly significant on the 5% significance level. None of the former colonizer dummies have explanatory power.
+      ")
+}
+``` 
 
 ```{r warning=FALSE, message=FALSE}
 f_test_joint <- linearHypothesis(baseline, 
@@ -241,17 +267,27 @@ f_test_joint <- linearHypothesis(baseline,
 f_test_joint
 ```
 
-The control variables are jointly significant. At least one of the control variables has explanatory power.
+```{r echo=FALSE, results='asis'}
+if (show_interpretation) {
+  cat("The control variables are jointly significant. At least one of the control variables has explanatory power.
+      ")
+}
+``` 
 
+\newpage
 # STEP 4 - Evaluating Gauss-Markov Assumptions and Applying Remedial Measures
 
 ## 4.1. Nature of the regressors
 
-
-Given that over repeated sampling, different countries can be observed, the values of D1, D2, D3, FoF, FoB and LAT are all stochastic. Furthermore, all of these have an effect on Human Capital, which is a mediator variable not included in the model and is therefore in the error term. This ultimately means that the aforementioned control variables are correlated with the error terms, and thus endogeneous.\newline
-RoL is stochastic and endogenous. It almost certainly correlates with the error term. This is because log GDP per capita affects RoL (see dashed line in causal diagram).\newline
+```{r echo=FALSE, results='asis'}
+if (show_interpretation) {
+  cat("Given that over repeated sampling, different countries can be observed, the values of D1, D2, D3, FoF, FoB and LAT are all stochastic. Furthermore, all of these have an effect on Human Capital, which is a mediator variable not included in the model and is therefore in the error term. This ultimately means that the aforementioned control variables are correlated with the error terms, and thus endogeneous.\n
+RoL is stochastic and endogenous. It almost certainly correlates with the error term. This is because log GDP per capita affects RoL (see dashed line in causal diagram).\n
 This implies that OLS becomes biased and inconsistent which means that the coefficients do not measure the true causal effect.
 Remediation is required. This will be covered in step 4(g).
+      ")
+}
+``` 
 
 ## 4.2. Distribution of Error Terms
 
@@ -271,7 +307,12 @@ ggplot(data.frame(residuals_baseline), aes(x = residuals_baseline)) +
   ggtitle("Histogram of Residuals")
 ```
 
-This does not look normally distributed. The left side is skewed. We need to test it to be sure.
+```{r echo=FALSE, results='asis'}
+if (show_interpretation) {
+  cat("This does not look normally distributed. The left side is skewed. We need to test it to be sure.
+      ")
+}
+``` 
 
 ### 4.2.2. Jarque-Bera Test for Normality
 
@@ -280,27 +321,44 @@ library(tseries)
 jarque.bera.test(residuals_baseline)
 ```
 
-We cannot reject the H0 hypothesis on the 5% significance level. This means that we can not say that the error terms are not normality distributed on the 5% significance level.\newline
-Side note: We have a small sample size. In small samples, the test may have low power, meaning it may fail to detect deviations from normality.\newline\newline
-Normality does not have an effect on OLS point estimation. If the error term is not normally distributed, our t- and F-tests are unreliable because they assume normality of the error term. However, since we cannot say that the error term is not normally distributed, our t- and F-test should remain reliable.\newline
+```{r echo=FALSE, results='asis'}
+if (show_interpretation) {
+  cat("We cannot reject the H0 hypothesis on the 5% significance level. This means that we can not say that the error terms are not normality distributed on the 5% significance level.\n
+Side note: We have a small sample size. In small samples, the test may have low power, meaning it may fail to detect deviations from normality.\n\n
+Normality does not have an effect on OLS point estimation. If the error term is not normally distributed, our t- and F-tests are unreliable because they assume normality of the error term. However, since we cannot say that the error term is not normally distributed, our t- and F-test should remain reliable.\n
 Remediation is not necessary in this step.
+      ")
+}
+``` 
 
 ## 4.3. Multicollinearity
 
-We compute the variance inflation factor:
+```{r echo=FALSE, results='asis'}
+if (show_interpretation) {
+  cat("We compute the variance inflation factor:
+      ")
+}
+``` 
 
 ```{r echo=FALSE}
 library(car)
 vif(baseline)
 ```
-We see that we get high values for D1 and D3. We think this is because there are barely any countries that belong to the fourth category (D1 = 0, D2 = 0, D3 = 0). If we give each category a dummy variable, we get perfect multicollinearity. This situation doesn't differ much from the situation of perfect multicollinearity. This is why we think D1 and D3 have such high VIF's.They are still all below 10 so there is no outrageous multicollinearity.\newline
-Multicollinnearity is not a theoretical issue. It does not affect unbiasedness or consistency and remains the most efficient estimator. However, a high degree of multicollinearity can lead to larger variances of the estimators and thus wider confidence intervals and lower t-statistics. This decreases the power of individual inferential tests. The tests have a hard time distinguishing the separate effect of every variable. The joint tests do not have an issue. Multicollinearity only leads to practical problems.\newline
+
+```{r echo=FALSE, results='asis'}
+if (show_interpretation) {
+  cat("We see that we get high values for D1 and D3. We think this is because there are barely any countries that belong to the fourth category (D1 = 0, D2 = 0, D3 = 0). If we give each category a dummy variable, we get perfect multicollinearity. This situation doesn't differ much from the situation of perfect multicollinearity. This is why we think D1 and D3 have such high VIF's.They are still all below 10 so there is no outrageous multicollinearity.\n
+Multicollinnearity is not a theoretical issue. It does not affect unbiasedness or consistency and remains the most efficient estimator. However, a high degree of multicollinearity can lead to larger variances of the estimators and thus wider confidence intervals and lower t-statistics. This decreases the power of individual inferential tests. The tests have a hard time distinguishing the separate effect of every variable. The joint tests do not have an issue. Multicollinearity only leads to practical problems.\n
 Action should not be taken because multicollinearity mostly reflects a lack of information in the data.
 
 Dan stelde ze ook nog een vraag: is het slim om een variable te droppen?
 NOOOO want je ging ervan uit dat je baseline specification correct was, dus geen omitted variables. Als je een variable omit dan heb je dus WEL een omitted variable bias, waardoor je estimator **biased** and **inconsistent** wordt (want endogeneity), aka het is ASS. Plus je weet ook niet elke je moet droppen want je hebt enkel joint test gedaan en de individual zijn niet betrouwbaar.
 
-\newpage
+\\newpage
+      ")
+}
+``` 
+
 
 ## 4.4 Heteroskedasticity
 ### Graphical detection of heteroskedasticity
@@ -404,24 +462,37 @@ ggplot(data.frame(Regions, res_sq), aes(x = Regions, y = res_sq)) +
   )
 ```
 
-On first sight, we notice a decrease in the spread of the residuals in the plots. For Africa (D1) we saw a slight increase contrary to the other regions. To conclude wether there is heteroskedadasticity, further testing is required. 
+```{r echo=FALSE, results='asis'}
+if (show_interpretation) {
+  cat("On first sight, we notice a decrease in the spread of the residuals in the plots. For Africa (D1) we saw a slight increase contrary to the other regions. To conclude wether there is heteroskedadasticity, further testing is required. 
+      ")
+}
+``` 
+
 
 ### Formal tests for heteroskedasticity
 
 ### Goldfeld-Quandt Test
 
+```{r echo=FALSE, results='asis'}
+if (show_interpretation) {
+  cat("
 Two-sided Goldfeld-Quandt test (hereinafter GQ1; no specified direction of variance change):
 $$
-H_0: \sigma_1^2 = \sigma_2^2 \quad \text{vs.} \quad H_1: \sigma_1^2 \neq \sigma_2^2
+H_0: \\sigma_1^2 = \\sigma_2^2 \\quad \\text{vs.} \\quad H_1: \\sigma_1^2 \\neq \\sigma_2^2
 $$
 One-sided GQ test for increasing variance (hereinafter GQ2):
 $$
-H_0: \sigma_2^2 \leq \sigma_1^2   \quad \text{vs.} \quad H_1: \sigma_2^2 > \sigma_1^2
+H_0: \\sigma_2^2 \\leq \\sigma_1^2   \\quad \\text{vs.} \\quad H_1: \\sigma_2^2 > \\sigma_1^2
 $$
 One-sided GQ test for decreasing variance (hereinafter GQ3):
 $$
-H_0: \sigma_2^2 \ge \sigma_1^2 \quad \text{vs.} \quad H_1: \sigma_2^2 < \sigma_1^2
+H_0: \\sigma_2^2 \\ge \\sigma_1^2 \\quad \\text{vs.} \\quad H_1: \\sigma_2^2 < \\sigma_1^2
 $$
+      ")
+}
+``` 
+
 
 ##### Goldfeld-Quandt Test by RoL
 
@@ -437,7 +508,13 @@ GQ2_RoL
 GQ3_RoL=gqtest(baseline, fraction = 10, order.by = -RoL) # for decreasing variance
 GQ3_RoL
 ```
-Given that we saw a decreasing trend in variance, the third test is most relevant in our case. The p-value shows that we cannot reject the hypothesis of homoskedasticity. We assume that the residuals are normally distributed in order to perform this test. As shown in 4.2. this is the case.
+
+```{r echo=FALSE, results='asis'}
+if (show_interpretation) {
+  cat("Given that we saw a decreasing trend in variance, the third test is most relevant in our case. The p-value shows that we cannot reject the hypothesis of homoskedasticity. We assume that the residuals are normally distributed in order to perform this test. As shown in 4.2. this is the case.
+      ")
+}
+``` 
 
 #### White’s General Heteroskedasticity Test
 ```{r warning=FALSE, echo=FALSE}
@@ -462,7 +539,13 @@ data.frame(
 
 summary(aux_model)$r.squared
 ```
-The stargazer shows us that none of the coefficients are significant in the auxiliary regression. This leads us to believe that the error variance does not depend on the regressors. We dropped the interaction variables because of our small sample size. Including the interaction terms would reduce the degrees of freedom too much. This is important because the null hypothesis assumes an infinitely large sample size.
+
+```{r echo=FALSE, results='asis'}
+if (show_interpretation) {
+  cat("The stargazer shows us that none of the coefficients are significant in the auxiliary regression. This leads us to believe that the error variance does not depend on the regressors. We dropped the interaction variables because of our small sample size. Including the interaction terms would reduce the degrees of freedom too much. This is important because the null hypothesis assumes an infinitely large sample size.
+      ")
+}
+``` 
 
 #### Brown-Forsythe Test by REGION
 ```{r echo=FALSE, warning=FALSE, message=FALSE}
@@ -536,13 +619,24 @@ cat("F =", round(F_stat4, 4), " df1 =", df1_4, " df2 =", df2_4,
 # Show group means of |deviations| for interpretation
 tapply(z_colony, Colony_factor, mean, na.rm = TRUE)
 ```
-Based on these tests we cannot reject the null hypothesis of homoskedasticity for colonies. For the regions we reject the null hypothesis of homoskedasticity. Given that this is an F-test, the same remark as before about our sample size holds.
+
+```{r echo=FALSE, results='asis'}
+if (show_interpretation) {
+  cat("Based on these tests we cannot reject the null hypothesis of homoskedasticity for colonies. For the regions we reject the null hypothesis of homoskedasticity. Given that this is an F-test, the same remark as before about our sample size holds.
+      ")
+}
+``` 
 
 \textcolor{red}{Are the values correct?}
 
-### Theoretical implications
+```{r echo=FALSE, results='asis'}
+if (show_interpretation) {
+  cat("### Theoretical implications
 
 Under heteroskedasticity OLS remains unbiased (and consistent), but becomes inefficient to GLS. Inference becomes invalid, because the variance formula used in OLS is no longer correct and needs to be adjusted.
+      ")
+}
+``` 
 
 ### Addressing "pure" heteroskedasticity
 
@@ -583,11 +677,17 @@ stargazer(baseline, EGLS_RoL,
           column.labels = c("Baseline", "EGLS by Regions"))
 
 ```
-Given that the regions are heteroskedastic, we divided each value with the variance of the region dummies. This way values with a higher variance get a lower weight. We see that with the EGLS model the R squared increases and the standards errors of the estimators slightly decrease.
+
+```{r echo=FALSE, results='asis'}
+if (show_interpretation) {
+  cat("Given that the regions are heteroskedastic, we divided each value with the variance of the region dummies. This way values with a higher variance get a lower weight. We see that with the EGLS model the R squared increases and the standards errors of the estimators slightly decrease.
 
 ### Theoretically comparing OLS to EGLS
 
 The efficiency and consistency of EGLS depends on the correctness of the assumed heteroskedasticity pattern. EGLS standard errors are not necessarily lower than OLS standard errors as OLS incorrectly assumes homoskedasticity. In the case of heteroskedasticity, EGLS is consistent and asymptotically efficient.
+      ")
+}
+``` 
 
 ## 4.5. Autocorrelation
 
@@ -618,8 +718,13 @@ ggplot(res_RoL_df, aes(x = Index, y = Residuals)) +
   )
 
 ```
-Based on this graph, it is difficult to see if there is some sort of negative correlation or no autocorrelation at all. This needs to be formally tested.
 
+```{r echo=FALSE, results='asis'}
+if (show_interpretation) {
+  cat("Based on this graph, it is difficult to see if there is some sort of negative correlation or no autocorrelation at all. This needs to be formally tested.
+      ")
+}
+``` 
 ### Formal autocorrelation tests 
 
 ### Runs test
@@ -673,7 +778,9 @@ dwtest(baseline_OR)
 bgtest(baseline_OR, order = 1)
 ```
 
-These tests conclude that there is not autocorrelation.
+```{r echo=FALSE, results='asis'}
+if (show_interpretation) {
+  cat("These tests conclude that there is not autocorrelation.
 
 ### Specific assumption of the previous test
 
@@ -700,6 +807,9 @@ In case of model misspecification OLS is biased and inconsistent, we need to cor
 
 Under pure autocorrelation (which is not the case here), OLS estimators remain unbiased and normally distributed, but the standard variance formula is incorrect. This leads to biased standard errors and unreliable inference. In addition, OLS is no longer efficient, as GLS provides estimators with lower variance.
 In case remediation is necessary, the more efficient (E)GLS model can remove autocorrelation, or in case of non-stationary data, first-differencing can be considered. In order to keep using OLS, the formula for the standard errors would have to be corrected using the Newey-West correction. Autocorrelation could also be a signal of misspecification, which we will discuss in the next part.
+      ")
+}
+``` 
 
 ## 4.6. Model Specification
 
@@ -709,7 +819,13 @@ In case remediation is necessary, the more efficient (E)GLS model can remove aut
 library(lmtest)
 resettest(baseline, power = 2:3, type = "fitted")
 ```
-According to the Ramsey Reset test we cannot reject the null of correct functional form. The powered fitted values are not jointly significant, confirming that the linear specification is not necessarily misspecified. A non-linear transformation of logY is not warranted.
+
+```{r echo=FALSE, results='asis'}
+if (show_interpretation) {
+  cat("According to the Ramsey Reset test we cannot reject the null of correct functional form. The powered fitted values are not jointly significant, confirming that the linear specification is not necessarily misspecified. A non-linear transformation of logY is not warranted.
+      ")
+}
+``` 
 
 #### Lagrange Multiplier (LM) test
 ```{r echo=FALSE, warning=FALSE, message=FALSE}
@@ -733,7 +849,12 @@ cat("LM statistic:", LM_stat, "\n")
 cat("p-value:", p_value_LM, "\n")
 ```
 
-We cannot reject the null. Higher-order terms of RoL and LAT are not significant in explaining the residuals, confirming linearity. Both RESET and LM tests agree: the linear model is not misspecified.
+```{r echo=FALSE, results='asis'}
+if (show_interpretation) {
+  cat("We cannot reject the null. Higher-order terms of RoL and LAT are not significant in explaining the residuals, confirming linearity. Both RESET and LM tests agree: the linear model is not misspecified.
+      ")
+}
+``` 
 
 \textcolor{red}{Are changes correct?}
 
@@ -764,7 +885,12 @@ f_test_inter_RoL <- linearHypothesis(baseline_inter_RoL,
 f_test_inter_RoL
 ```
 
-Since the p-value (0.1209) is greater than 0.05, we fail to reject the null hypothesis. The interaction terms are not jointly significant. This suggests that the impact of the Rule of Law on logY does not statistically differ significantly across the different regions defined by D1, D2 and D3.
+```{r echo=FALSE, results='asis'}
+if (show_interpretation) {
+  cat("Since the p-value (0.1209) is greater than 0.05, we fail to reject the null hypothesis. The interaction terms are not jointly significant. This suggests that the impact of the Rule of Law on logY does not statistically differ significantly across the different regions defined by D1, D2 and D3.
+      ")
+}
+``` 
 
 #### Extend the specification by including human capital
 ```{r echo=FALSE, message=FALSE, warning=FALSE}
@@ -809,7 +935,10 @@ cat("Magnitude RoL:", round(mag_HC, 4)      , "     Magnitude HC", stats_HC["HC"
 cat("Sign RoL:     ", sign_HC               , "          Sign HC:       ", ifelse(stats_HC["HC", "Estimate"] > 0, "+", "-"), "\n")
 cat("p-value RoL:  ", signif(p_val_HC, 4)   , "   p-value HC:  ", signif(stats_HC["HC", "Pr(>|t|)"], 4), "\n")
 ```
-The coefficient for RoL dropped significantly (from 0.8207 to 0.4277) when HC was added. This suggests a strong relationship between institutions and human capital. RoL is still highly significant and positive. RoL is robust to the addition of HC in the model. 
+
+```{r echo=FALSE, results='asis'}
+if (show_interpretation) {
+  cat('The coefficient for RoL dropped significantly (from 0.8207 to 0.4277) when HC was added. This suggests a strong relationship between institutions and human capital. RoL is still highly significant and positive. RoL is robust to the addition of HC in the model. 
 
 HC as a Confounder: If we view HC as a confounder, it means HC affects both the quality of institutions and GDP. In this view, the baseline model was overestimating the effect of RoL because it was "soaking up" the effect of omitted human capital.
 HC as a Mediator: If we view HC as a mediator, it means good institutions (RoL) lead to better HC, which in turn leads to higher logY. In this case, the drop in the coefficient is expected because HC is the channel through which institutions work. By including it, we are measuring only the direct effect of RoL, ignoring its indirect effect via education. 
@@ -818,12 +947,20 @@ Conclusion:
 The Baseline Model without Human Capital stands as the most appropriate specification. Econometrically, this choice is supported by the joint insignificance of the continent interaction terms (with an F-test p-value of 0.1209), these extra variables add unnecessary complexity without improving the model’s explanatory power. Furthermore, including Human Capital as a regressor introduces a "bad control" problem. Adding it to the model "soaks up" the influence of the Rule of Law, reducing its coefficient from 0.82 to 0.43 and obscuring the true magnitude of its impact.
 
 Economically, institutions are recognized as "deep determinants" of growth that precede and incentivize investments in education and physical capital. The Baseline Model captures the total effect of institutions, which includes both their direct influence on productivity and their indirect influence through the development of a skilled workforce. By contrast, the model with Human Capital only measures the narrow direct effect, which underrepresents the actual role of the Rule of Law in economic development. Additionally, Human Capital is often endogenous—where higher income levels lead to better education—which can introduce simultaneity bias. Therefore, the Baseline Model remains the most robust and theoretically sound representation of how institutional quality drives economic performance.
+      ')
+}
+``` 
 
 ## 4.7. Endogeneity and Instrumental Variables
 ### Baseline model (without HC)
-RoL is stochastic and endogenous. D1, D2, D3, FoF, FoB and LAT are all stochastic and exogenous. If one or more regressor is endogenous OLS is biased, inconsistent and not efficient. 
+```{r echo=FALSE, results='asis'}
+if (show_interpretation) {
+  cat("RoL is stochastic and endogenous. D1, D2, D3, FoF, FoB and LAT are all stochastic and exogenous. If one or more regressor is endogenous OLS is biased, inconsistent and not efficient. 
 
 As instrumental variables we choose the Colonial Initial Conditions (log SM, log PD). These instrumental variables are valid when they are exogenous, relevant and excluded variables. Based on the diagram we assume that there is no potential feedback to Colonial Initial Conditions, making them exogenous (no correlation with the error term). The Colonial Initial Conditions are relevant since they are correlated with RoL. The exclusion restriction is fulfilled since they are not included in our baseline model.
+      ")
+}
+``` 
 
 
 ### 2SLS estimation
@@ -849,7 +986,12 @@ stargazer(baseline, twosls,
           no.space = TRUE)
 ```
 
-Based on the diagnostic test we observe an F statistic of 9.5947. This is below the Rule of Thumb of 10 which indicates a weak instrument.
+```{r echo=FALSE, results='asis'}
+if (show_interpretation) {
+  cat("Based on the diagnostic test we observe an F statistic of 9.5947. This is below the Rule of Thumb of 10 which indicates a weak instrument.
+      ")
+}
+``` 
 
 
 ### Testing for Endogeneity
@@ -860,7 +1002,9 @@ haus=lm(logY ~ RoL + LAT + D1 + D2 + D3 + FoF + FoB + res_first, data=data)
 summary (haus)
 ```
 
-res_first is significant on the 5% level. The endogenous component of RoL has genuine explanatory power once added to the equation. The residual is endogenous such that OLS is inconsistent and 2SLS is preferred.
+```{r echo=FALSE, results='asis'}
+if (show_interpretation) {
+  cat("res_first is significant on the 5% level. The endogenous component of RoL has genuine explanatory power once added to the equation. The residual is endogenous such that OLS is inconsistent and 2SLS is preferred.
 
 ### Conceptual question
 
@@ -869,6 +1013,9 @@ Since the instruments are weak, 2SLS estimates are biased toward OLS, inheriting
 The reported standard errors are downward biased, they ignore first-stage uncertainty.
 
 Omitting HC in the IV model does not create omitted variable bias if HC is correctly viewed as a mediator.
+      ")
+}
+``` 
 
 ### Extended model (including HC)
 
@@ -877,7 +1024,12 @@ extended <- lm(logY ~ RoL + LAT + D1 + D2 + D3 + FoF + FoB + HC, data = data)
 summary(extended)
 ```
 
-HC should be treated as potentially endogenous. We can derive this from the theoretical diagram. If it actually is endogenous, we would instrument it using the Primary school enrollment variable (PSE) and the share of Protestant missionaries (PM). 
+```{r echo=FALSE, results='asis'}
+if (show_interpretation) {
+  cat("HC should be treated as potentially endogenous. We can derive this from the theoretical diagram. If it actually is endogenous, we would instrument it using the Primary school enrollment variable (PSE) and the share of Protestant missionaries (PM). 
+      ")
+}
+``` 
 
 ### 2SLS estimation
 ```{r echo=FALSE, message=FALSE, warning=FALSE}
@@ -906,7 +1058,13 @@ stargazer(extended, twosls_extended,
           no.space = TRUE)
 ```
 
-To evaluate the weakness of the instrumental variables, we used the pragmatic approach by testing the specific instruments for each endogenous regressor, in the relevant first-stage equation. The F test was below 10 for both the equations, indicating weak instruments.
+
+```{r echo=FALSE, results='asis'}
+if (show_interpretation) {
+  cat("To evaluate the weakness of the instrumental variables, we used the pragmatic approach by testing the specific instruments for each endogenous regressor, in the relevant first-stage equation. The F test was below 10 for both the equations, indicating weak instruments.
+      ")
+}
+``` 
 
 ### Testing for Endogeneity
 ```{r}
@@ -919,17 +1077,26 @@ linearHypothesis(haus_extended, c("res_first_RoL = 0", "res_first_HC = 0"))
 summary (haus_extended)
 ```
 
-The Hausman tests show no evidence of possible endogeneity. The joint F test and the individual t-tests of the residuals as regressors are insignificant, meaning we cannot reject the H0 hypothesis of exogeneity. 
+```{r echo=FALSE, results='asis'}
+if (show_interpretation) {
+  cat("The Hausman tests show no evidence of possible endogeneity. The joint F test and the individual t-tests of the residuals as regressors are insignificant, meaning we cannot reject the H0 hypothesis of exogeneity. 
 
 ### Conceptual questions
 
-Including HC drops RoL coefficient (and thus effect) from 0.82 to 0.43. RoL still has a significant, positive effect, but smaller in magnitude. This indicates that the effect measured in the extended model is the direct effect of RoL, rather than the indirect effect measured in the baseline model.The exclusions restriction in step 1 states that the included IVs (Log SM, log PD) should only effect logY through RoL. When HC is included this is not longer the case, another channel is created, namely: Colonial Initial Conditions -> Early Human Capital Formation -> Human capital -> Income 
-This means that the exclusions restriction on these IVs do no longer hold when used in the extended version. Making them incorrect IVs to use and invalidating the results gained from the final test (i.e. the results showing that RoL is no longer endogenous).
+Including HC drops RoL coefficient (and thus effect) from 0.82 to 0.43. RoL still has a significant, positive effect, but smaller in magnitude. This indicates that the effect measured in the extended model is the direct effect of RoL, rather than the indirect effect measured in the baseline model.The test shows that HC is exogenous and RoL becomes exogenous, in contrast to the baseline model.But exclusions restriction in step 1 states that the included IVs (Log SM, log PD) should only effect logY through RoL. When HC is included this is potentially no longer the case, another channel is potentially created, namely: Colonial Initial Conditions -> Early Human Capital Formation -> Human capital -> Income 
+In that case the exclusions restriction on these IVs no longer hold when used in the extended version. Making them incorrect IVs to use and invalidating the results gained from the final test (i.e. the results showing that RoL is no longer endogenous). 
+      ")
+}
+``` 
 
+
+```{r echo=FALSE, results='asis'}
+if (show_interpretation) {
+  cat("\\newpage
 # STEP 5 - General remediation and conclusion
 
 Our baseline model was: 
-$$\text{logY}_i = \beta_0 + \beta_1 \text{RoL}_i + \beta_2 \text{LAT}_i + \beta_3 D_{1i} + \beta_4 D_{2i} + \beta_5 D_{3i} + \beta_6 \text{FoB}_i + \beta_7 \text{FoF}_i + \mu_i$$
+$$\\text{logY}_i = \\beta_0 + \\beta_1 \\text{RoL}_i + \\beta_2 \\text{LAT}_i + \\beta_3 D_{1i} + \\beta_4 D_{2i} + \\beta_5 D_{3i} + \\beta_6 \\text{FoB}_i + \\beta_7 \\text{FoF}_i + \\mu_i$$
 OLS is BLUE **if** the Gauss-Markov assumptions are not violated. We checked them one by one:
 
 ## Gauss-Markov assumptions
@@ -964,3 +1131,16 @@ None of the formal tests which we used to detect model misspecification could re
 ### G. Endogeneity
 
 When assessing endogeneity, we first introduced instrumental variables for RoL (Initial Colonial Conditions) to our model through 2SLS and computed the Hausman test. In this case, we were able to reject the null hypothesis of exogeneity (of RoL), confirming the theoretical view that RoL is likely endogenous. However, the instruments we chose were weak, as their F-statistic was below 10. For the model without HC, we prefer 2SLS to OLS as RoL is not exogenous which makes OLS biased and inconsistent, even though our instruments are weak.\newline
+
+There is one big consideration to be made in this second step. When we include the instruments for HC in the extended model, we implicitly assume that the 3 conditions for an instrument hold. However, when looking at our theoretical diagram, we can see that there is a potential relation between the instruments of RoL on the instruments of HC, making the exclusion restriction not satisfied, as RoL's instruments now have an impact on logY through a channel that's not RoL, making it an invalid instrument. For this reason, we cannot use 2SLS on the extended model, as our instruments are not valid and OLS is more efficient. However, in the model misspecification part, we already rejected the idea of using OLS on the extended model, as RoL's true impact is no longer estimated. As such, our preferred model is **2SLS on the baseline model, without HC**. Even if the exclusion restriction is satisfied and the instruments would be valid (but weak), we would still not use 2SLS on this model because the Hausman test does not suggest endogeneity of RoL or HC. As such, we would have to use OLS on this extended model, which we again rejected in the model misspecification part.
+
+
+### Results from final regression model.
+
+To conclude, our preferred model is 2SLS on the baseline model, without including HC. However, even this model still has its drawbacks and is not optimal: our instruments are weak, HC is not included in the model and there is potential heteroskedasticity. In the final regression model only RoL is significant - next to the intercept - with an estimate of 1.36. This means that for every one unit increase in RoL (on a 5 unit scale), Y increases by 289.6%. Other regressors are insignificant.
+      ")
+}
+``` 
+
+\textcolor{red}{Can we use titles in our output, for the exam?}
+
