@@ -467,6 +467,8 @@ The stargazer shows us that none of the coefficients are significant in the auxi
 #### Brown-Forsythe Test by REGION
 ```{r echo=FALSE, warning=FALSE, message=FALSE}
 # Group medians of residuals
+library("dplyr")
+
 data <- data %>%
 mutate(Regions_factor = factor(Regions))
 attach(data)
@@ -496,6 +498,8 @@ tapply(z_region, Regions_factor, mean, na.rm = TRUE)
 
 #### Brown-Forsythe Test by COLONY
 ```{r echo=FALSE, warning=FALSE, message=FALSE}
+library("dplyr")
+
 data <- data %>%
   mutate(Colony_factor = factor(case_when(
     FoF == 1 ~ 2,
@@ -576,10 +580,10 @@ EGLS_RoL <- lm(logY ~ RoL + LAT + D1 + D2 + D3 + FoB + FoF,
 stargazer(baseline, EGLS_RoL,
           type = "text",
           style = "all",
-          column.labels = c("Baseline", "EGLS by RoL"))
+          column.labels = c("Baseline", "EGLS by Regions"))
 
 ```
-Given that the regions are heteroskedastic, we multiplied each value with the variance of the region dummies. This way values with a higher variance get a lower weight. We see that with the EGLS model the R squared increases and the standards errors of the estimators slightly decrease.
+Given that the regions are heteroskedastic, we divided each value with the variance of the region dummies. This way values with a higher variance get a lower weight. We see that with the EGLS model the R squared increases and the standards errors of the estimators slightly decrease.
 
 ### Theoretically comparing OLS to EGLS
 
@@ -760,7 +764,7 @@ f_test_inter_RoL <- linearHypothesis(baseline_inter_RoL,
 f_test_inter_RoL
 ```
 
-Since the p-value (0.1209) is greater than 0.05, we fail to reject the null hypothesis. The interaction terms are not jointly significant. This suggests that the impact of the Rule of Law on logY does not statistically differ significantly across the different regions defined by D1,D2, and D3.
+Since the p-value (0.1209) is greater than 0.05, we fail to reject the null hypothesis. The interaction terms are not jointly significant. This suggests that the impact of the Rule of Law on logY does not statistically differ significantly across the different regions defined by D1, D2 and D3.
 
 #### Extend the specification by including human capital
 ```{r echo=FALSE, message=FALSE, warning=FALSE}
@@ -924,7 +928,39 @@ This means that the exclusions restriction on these IVs do no longer hold when u
 
 # STEP 5 - General remediation and conclusion
 
-- standard error terms zijn normally distributed
-- multicollinearity: geen VIF boven 10, maar wel hoge waarden. No action
-- heteroskedasticity: aanwezig (regions of colony?) --> adress met EGLS (cold ofni?)
-- 
+Our baseline model was: 
+$$\text{logY}_i = \beta_0 + \beta_1 \text{RoL}_i + \beta_2 \text{LAT}_i + \beta_3 D_{1i} + \beta_4 D_{2i} + \beta_5 D_{3i} + \beta_6 \text{FoB}_i + \beta_7 \text{FoF}_i + \mu_i$$
+OLS is BLUE **if** the Gauss-Markov assumptions are not violated. We checked them one by one:
+
+## Gauss-Markov assumptions
+
+### A. Nature of the regressors
+
+GM assumption: all regressors are deterministic, i.e. have the same values over repeated samples. 
+All regressors in the baseline model are stochastic. RoL is a potentially endogenous variable (which will be clarified later), in which case OLS is biased and inconsistent.
+Remediation is required
+
+### B. Standard error terms are normally distributed
+
+No non-normality of the error terms was detected in the baseline model. **This could be because of the low power of the Jarque-Bera test, as we only have 62 observations.** 
+No remediation is required.
+
+### C. Multicollinearity
+
+There is no regressor for which there is multicollinearity, as all VIFs are below 10. As such, remediation is not necessary, especially since any elevated values only reflect a lack of information in the data. Even if there was multicollinearity, no remediation is need. It only has practical implications.
+
+### D. Heteroskedasticity
+
+We detected heteroskedasticity over the different regions using the Brown-Forsythe test. Based on this formal test, we computed EGLS, which was able to lower the standard errors a little. However, EGLS depends on the correctness of the assumed heteroskedasticity pattern and it's only asymptotically efficient, so we also corrected the variance formula for OLS by computing White's SE.
+
+### E. Autocorrelation
+
+None of the three tests we used to detect autocorrelation were able to reject the null hypothesis of no autocorrelation. Thus, remediation is not necessary.
+
+### F. Model misspecification
+
+None of the formal tests which we used to detect model misspecification could reject the null hypothesis of model misspecification. Including HC in the model did not have any impact on the significance of RoL, however its magnitude dropped from 0.82 to 0.43. Due to this conclusion, we no longer observe the true impact of RoL on logY, because the indirect effect from RoL on logY through HC is now present in the HC coefficient. As such, we prefer the baseline model to be without HC, in case we correctly view HC to be a mediator. 
+
+### G. Endogeneity
+
+When assessing endogeneity, we first introduced instrumental variables for RoL (Initial Colonial Conditions) to our model through 2SLS and computed the Hausman test. In this case, we were able to reject the null hypothesis of exogeneity (of RoL), confirming the theoretical view that RoL is likely endogenous. However, the instruments we chose were weak, as their F-statistic was below 10. For the model without HC, we prefer 2SLS to OLS as RoL is not exogenous which makes OLS biased and inconsistent, even though our instruments are weak.\newline
